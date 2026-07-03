@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roadtripper — Profiles</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #F7F6F3;
+    color: #1A1A18;
+    padding: 24px 16px;
+  }
+  .rt-app {
+    max-width: 560px;
+    margin: 0 auto;
+    background: #FFFFFF;
+    border-radius: 16px;
+    border: 1px solid #E5E2DC;
+    overflow: hidden;
+  }
+  .rt-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #E5E2DC;
+  }
+  .rt-logo { font-size: 18px; font-weight: 600; color: #1A1A18; letter-spacing: -0.3px; }
+  .rt-logo span { color: #1D9E75; }
+  .rt-nav-tabs { display: flex; gap: 4px; }
+  .rt-tab {
+    padding: 7px 14px; border-radius: 8px; font-size: 13px; cursor: pointer;
+    border: 1px solid transparent; color: #5F5E5A; background: transparent;
+    transition: all 0.15s; font-family: inherit;
+  }
+  .rt-tab.active { background: #F2F1ED; border-color: #E5E2DC; color: #1A1A18; font-weight: 600; }
+  .rt-tab:hover:not(.active) { background: #F7F6F3; }
+  .rt-main { padding: 24px 20px; max-height: 75vh; overflow-y: auto; }
+  .rt-view { display: none; }
+  .rt-view.active { display: block; }
+
+  .rt-profile-header { display: flex; gap: 16px; margin-bottom: 22px; align-items: flex-start; }
+  .rt-menu-btn {
+    width: 32px; height: 32px; border-radius: 50%; border: none; background: transparent;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
+    transition: background 0.15s; position: relative; margin-left: auto;
+  }
+  .rt-menu-btn:hover { background: #F2F1ED; }
+  .rt-menu-btn svg { width: 18px; height: 18px; color: #5F5E5A; }
+  .rt-menu-dropdown {
+    display: none; position: absolute; top: 38px; right: 0; background: white;
+    border: 1px solid #E5E2DC; border-radius: 10px; padding: 6px; min-width: 180px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08); z-index: 40;
+  }
+  .rt-menu-dropdown.show { display: block; }
+  .rt-menu-item {
+    display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 7px;
+    font-size: 13px; color: #1A1A18; cursor: pointer; background: none; border: none;
+    width: 100%; text-align: left; font-family: inherit; transition: background 0.15s;
+  }
+  .rt-menu-item:hover { background: #F7F6F3; }
+  .rt-menu-item svg { width: 15px; height: 15px; color: #5F5E5A; flex-shrink: 0; }
+  .rt-menu-item.danger { color: #B5483B; }
+  .rt-menu-item.danger svg { color: #B5483B; }
+  .rt-menu-divider { height: 1px; background: #E5E2DC; margin: 4px 6px; }
+
+  .rt-report-modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(26,26,24,0.5);
+    align-items: center; justify-content: center; padding: 20px; z-index: 60;
+  }
+  .rt-report-modal-overlay.show { display: flex; }
+  .rt-report-modal { background: white; border-radius: 14px; padding: 22px; max-width: 380px; width: 100%; }
+  .rt-report-modal-title { font-size: 15px; font-weight: 600; color: #1A1A18; margin-bottom: 6px; }
+  .rt-report-modal-text { font-size: 12.5px; color: #5F5E5A; line-height: 1.5; margin-bottom: 16px; }
+  .rt-report-reason {
+    display: block; padding: 10px 12px; border-radius: 9px; border: 1px solid #E5E2DC;
+    font-size: 13px; color: #1A1A18; margin-bottom: 8px; cursor: pointer; transition: all 0.15s;
+    width: 100%; text-align: left; background: white; font-family: inherit;
+  }
+  .rt-report-reason:hover { background: #FAFAF8; border-color: #D8D5CD; }
+  .rt-report-reason.selected { background: #FAECE7; border-color: #D85A30; color: #993C1D; font-weight: 600; }
+  .rt-also-block-row {
+    display: flex; align-items: flex-start; gap: 9px; padding: 10px 12px; border-radius: 9px;
+    background: #FAFAF8; border: 1px solid #E5E2DC; font-size: 12.5px; color: #5F5E5A;
+    cursor: pointer; margin-top: 10px; line-height: 1.4;
+  }
+  .rt-also-block-row input { margin-top: 1px; flex-shrink: 0; cursor: pointer; }
+  .rt-report-modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .rt-btn-secondary {
+    flex: 1; padding: 11px; border-radius: 10px; background: #F2F1ED; color: #1A1A18;
+    border: none; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .rt-btn-danger-solid {
+    flex: 1; padding: 11px; border-radius: 10px; background: #D85A30; color: white;
+    border: none; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .rt-toast {
+    display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #085041; color: #9FE1CB; padding: 11px 20px; border-radius: 10px;
+    font-size: 13px; z-index: 100; white-space: nowrap;
+  }
+  .rt-toast.show { display: block; }
+  .rt-avatar {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: linear-gradient(135deg, #1D9E75, #5DCAA5);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: 600; color: white; flex-shrink: 0;
+  }
+  .rt-avatar.rider { background: linear-gradient(135deg, #5B8FD9, #8AB4E8); }
+  .rt-profile-info { flex: 1; min-width: 0; }
+  .rt-profile-name-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+  .rt-profile-name { font-size: 18px; font-weight: 600; color: #1A1A18; }
+  .rt-verified-badge {
+    display: inline-flex; align-items: center; gap: 4px; font-size: 11px;
+    padding: 3px 9px; border-radius: 999px; background: #E1F5EE;
+    border: 1px solid #5DCAA5; color: #085041; font-weight: 600;
+  }
+  .rt-profile-sub { font-size: 13px; color: #5F5E5A; margin-bottom: 10px; }
+  .rt-rating-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .rt-rating-item { display: flex; align-items: center; gap: 5px; font-size: 13px; color: #1A1A18; font-weight: 500; }
+  .rt-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .rt-dot.stars { background: #E8A33D; }
+  .rt-dot.ontime { background: #1D9E75; }
+  .rt-dot.speed { background: #5B8FD9; }
+
+  .rt-section { margin-bottom: 20px; }
+  .rt-section-label {
+    font-size: 11px; font-weight: 600; color: #8C8A84; text-transform: uppercase;
+    letter-spacing: 0.6px; margin-bottom: 10px;
+  }
+  .rt-card { background: #FAFAF8; border: 1px solid #E5E2DC; border-radius: 12px; padding: 14px 16px; }
+
+  .rt-verify-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid #E5E2DC; }
+  .rt-verify-row:last-child { border-bottom: none; }
+  .rt-verify-icon {
+    width: 20px; height: 20px; border-radius: 50%; background: #E1F5EE;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;
+  }
+  .rt-verify-icon svg { width: 11px; height: 11px; }
+  .rt-verify-text { font-size: 13px; color: #1A1A18; font-weight: 500; }
+  .rt-verify-sub { font-size: 11px; color: #8C8A84; margin-top: 1px; }
+
+  .rt-vehicle-row { display: flex; align-items: center; gap: 12px; }
+  .rt-vehicle-icon {
+    width: 42px; height: 42px; border-radius: 10px; background: #FFFFFF;
+    border: 1px solid #E5E2DC; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .rt-vehicle-icon svg { width: 20px; height: 20px; color: #5F5E5A; }
+  .rt-vehicle-name { font-size: 14px; font-weight: 600; color: #1A1A18; }
+  .rt-vehicle-sub { font-size: 12px; color: #5F5E5A; margin-top: 1px; }
+
+  .rt-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .rt-stat-box { background: #FAFAF8; border: 1px solid #E5E2DC; border-radius: 10px; padding: 12px 8px; text-align: center; }
+  .rt-stat-val { font-size: 18px; font-weight: 700; color: #1A1A18; }
+  .rt-stat-label { font-size: 10px; color: #8C8A84; margin-top: 3px; line-height: 1.3; }
+
+  .rt-avail-row {
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;
+    padding: 12px 14px; border-radius: 10px; background: #E1F5EE; border: 1px solid #5DCAA5;
+  }
+  .rt-avail-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #085041; font-weight: 600; }
+  .rt-avail-pulse { width: 8px; height: 8px; border-radius: 50%; background: #1D9E75; }
+  .rt-avail-eta { font-size: 12px; color: #0F6E56; }
+
+  .rt-cost-toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 10px; }
+  .rt-cost-toggle-label { font-size: 13px; color: #1A1A18; font-weight: 500; }
+  .rt-cost-toggle-desc { font-size: 11px; color: #8C8A84; line-height: 1.5; }
+  .rt-toggle-switch {
+    width: 32px; height: 18px; border-radius: 9px; background: #5DCAA5;
+    position: relative; flex-shrink: 0; cursor: pointer; transition: background 0.2s;
+  }
+  .rt-toggle-switch.off { background: #D8D5CD; }
+  .rt-toggle-knob {
+    width: 14px; height: 14px; border-radius: 50%; background: white;
+    position: absolute; top: 2px; left: 16px; transition: left 0.2s;
+  }
+  .rt-toggle-switch.off .rt-toggle-knob { left: 2px; }
+
+  .rt-history-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #E5E2DC; }
+  .rt-history-row:last-child { border-bottom: none; }
+  .rt-history-route { font-size: 13px; color: #1A1A18; font-weight: 500; }
+  .rt-history-date { font-size: 11px; color: #8C8A84; margin-top: 1px; }
+  .rt-history-right { text-align: right; }
+  .rt-history-price { font-size: 13px; font-weight: 600; color: #1A1A18; }
+  .rt-history-meta { font-size: 11px; color: #E8A33D; margin-top: 1px; }
+
+  .rt-review-row { padding: 12px 0; border-bottom: 1px solid #E5E2DC; }
+  .rt-review-row:last-child { border-bottom: none; }
+  .rt-review-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .rt-review-name { font-size: 13px; font-weight: 600; color: #1A1A18; }
+  .rt-review-stars { font-size: 12px; color: #E8A33D; }
+  .rt-review-text { font-size: 12.5px; color: #5F5E5A; line-height: 1.55; }
+  .rt-review-date { font-size: 10px; color: #B5B2AA; margin-top: 5px; }
+
+  .rt-rider-badge-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .rt-rider-badge { font-size: 11px; padding: 3px 9px; border-radius: 999px; background: #F2F1ED; border: 1px solid #E5E2DC; color: #5F5E5A; }
+
+  .rt-safety-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid #E5E2DC; }
+  .rt-safety-row:last-child { border-bottom: none; }
+  .rt-safety-icon {
+    width: 20px; height: 20px; border-radius: 50%; background: #E1F5EE;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;
+  }
+  .rt-safety-icon.pending { background: #FAECE7; }
+  .rt-safety-icon svg { width: 11px; height: 11px; }
+  .rt-safety-text { font-size: 13px; color: #1A1A18; font-weight: 500; }
+  .rt-safety-sub { font-size: 11px; color: #8C8A84; margin-top: 1px; }
+  .rt-emergency-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 12px; border-radius: 10px; background: #FFFFFF;
+    border: 1.5px solid #D85A30; color: #D85A30; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit; transition: background 0.15s;
+  }
+  .rt-emergency-btn:hover { background: #FAECE7; }
+  .rt-emergency-btn svg { width: 16px; height: 16px; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: #D8D5CD; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="rt-app">
+  <nav class="rt-nav">
+    <div class="rt-logo">road<span>tripper</span></div>
+    <div class="rt-nav-tabs">
+      <button class="rt-tab active" id="tab-driver" onclick="switchProfile('driver')">Driver profile</button>
+      <button class="rt-tab" id="tab-rider" onclick="switchProfile('rider')">Rider profile</button>
+    </div>
+  </nav>
+
+  <div class="rt-main">
+
+    <!-- DRIVER PROFILE -->
+    <div id="driver-view" class="rt-view active">
+      <div class="rt-profile-header">
+        <div class="rt-avatar">RM</div>
+        <div class="rt-profile-info">
+          <div class="rt-profile-name-row">
+            <div class="rt-profile-name">Rafael M.</div>
+            <span class="rt-verified-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:11px;height:11px;"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>
+              Verified driver
+            </span>
+          </div>
+          <div class="rt-profile-sub">Driving on Roadtripper since March 2026 · Doral, FL</div>
+          <div class="rt-rating-row">
+            <span class="rt-rating-item"><span class="rt-dot stars"></span>4.9 overall</span>
+            <span class="rt-rating-item"><span class="rt-dot ontime"></span>96% on-time</span>
+            <span class="rt-rating-item"><span class="rt-dot speed"></span>Smooth &amp; safe</span>
+          </div>
+        </div>
+        <div style="position:relative;">
+          <button class="rt-menu-btn" onclick="toggleMenu('driver-profile')">
+            <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+          </button>
+          <div class="rt-menu-dropdown" id="driver-profile-menu">
+            <button class="rt-menu-item" onclick="openReport('Rafael')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+              Report Rafael
+            </button>
+            <div class="rt-menu-divider"></div>
+            <button class="rt-menu-item danger" onclick="openBlockConfirm('Rafael')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M4.9 4.9l14.2 14.2"/></svg>
+              Block Rafael
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-label">Verification</div>
+        <div class="rt-card">
+          <div class="rt-verify-row">
+            <div class="rt-verify-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
+            <div>
+              <div class="rt-verify-text">Active Uber driver</div>
+              <div class="rt-verify-sub">4.92 rating · 1,840+ trips</div>
+            </div>
+          </div>
+          <div class="rt-verify-row">
+            <div class="rt-verify-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
+            <div>
+              <div class="rt-verify-text">Active Lyft driver</div>
+              <div class="rt-verify-sub">4.95 rating · 620+ trips</div>
+            </div>
+          </div>
+          <div class="rt-verify-row">
+            <div class="rt-verify-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
+            <div>
+              <div class="rt-verify-text">Background check on file</div>
+              <div class="rt-verify-sub">Verified via existing platform · reviewed manually</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-label">Safety</div>
+        <div class="rt-card">
+          <div class="rt-safety-row">
+            <div class="rt-safety-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
+            <div>
+              <div class="rt-safety-text">Active status re-confirmed</div>
+              <div class="rt-safety-sub">Uber/Lyft account checked as current, not suspended</div>
+            </div>
+          </div>
+          <div class="rt-safety-row">
+            <div class="rt-safety-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
+            <div>
+              <div class="rt-safety-text">Phone number verified</div>
+              <div class="rt-safety-sub">Confirmed via one-time code</div>
+            </div>
+          </div>
+          <div class="rt-safety-row">
+            <div class="rt-safety-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
+            <div>
+              <div class="rt-safety-text">Vehicle photo matches listing</div>
+              <div class="rt-safety-sub">Current photo on file, reviewed manually</div>
+            </div>
+          </div>
+          <div class="rt-safety-row">
+            <div class="rt-safety-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
+            <div>
+              <div class="rt-safety-text">Emergency contact on file</div>
+              <div class="rt-safety-sub">Used only if a trip needs to be escalated</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rt-section">
+        <button class="rt-emergency-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+          Share trip / emergency
+        </button>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-label">Vehicle</div>
+        <div class="rt-card">
+          <div class="rt-vehicle-row">
+            <div class="rt-vehicle-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><path d="M3 16a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2z"/><circle cx="7" cy="17.5" r="1.2"/><circle cx="17" cy="17.5" r="1.2"/></svg>
+            </div>
+            <div>
+              <div class="rt-vehicle-name">2023 Hyundai Sonata</div>
+              <div class="rt-vehicle-sub">Black · 4 seats · License plate on file</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-label">Availability</div>
+        <div class="rt-avail-row">
+          <div class="rt-avail-label"><span class="rt-avail-pulse"></span> Available now</div>
+          <div class="rt-avail-eta">Can reach Doral area in ~15 min</div>
+        </div>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-label">Lifetime stats</div>
+        <div class="rt-stats-grid">
+          <div class="rt-stat-box"><div class="rt-stat-val">142</div><div class="rt-stat-label">Roadtripper<br>trips</div></div>
+          <div class="rt-stat-box"><div class="rt-stat-val">96%</div><div class="rt-stat-label">On-time<br>rate</div></div>
+          <div class="rt-stat-box"><div class="rt-stat-val">$0.41</div><div class="rt-stat-label">Avg. cost<br>per mile</div></div>
+        </div>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-label">Cost transparency</div>
+        <div class="rt-card">
+          <div class="rt-cost-toggle-row">
+            <div class="rt-cost-toggle-label">Share cost breakdown with riders</div>
+            <div class="rt-toggle-switch" id="cost-toggle" onclick="toggleCost()"><div class="rt-toggle-knob"></div></div>
+          </div>
+          <div class="rt-cost-toggle-desc">Riders can see what portion of the fare covers gas, maintenance, insurance, and depreciation, based on your reported averages.</div>
+        </div>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-label">Recent trips</div>
+        <div class="rt-card">
+          <div class="rt-history-row">
+            <div><div class="rt-history-route">Miami → Orlando</div><div class="rt-history-date">Jun 14, 2026</div></div>
+            <div class="rt-history-right"><div class="rt-history-price">$140</div><div class="rt-history-meta">★★★★★</div></div>
+          </div>
+          <div class="rt-history-row">
+            <div><div class="rt-history-route">Doral → Tampa</div><div class="rt-history-date">Jun 9, 2026</div></div>
+            <div class="rt-history-right"><div class="rt-history-price">$165</div><div class="rt-history-meta">★★★★★</div></div>
+          </div>
+          <div class="rt-history-row">
+            <div><div class="rt-history-route">Miami → Key West</div><div class="rt-history-date">Jun 2, 2026</div></div>
+            <div class="rt-history-right"><div class="rt-history-price">$175</div><div class="rt-history-meta">★★★★☆</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-label">Rider reviews</div>
+        <div class="rt-card">
+          <div class="rt-review-row">
+            <div class="rt-review-top"><span class="rt-review-name">Carlos M.</span><span class="rt-review-stars">★★★★★</span></div>
+            <div class="rt-review-text">Right on time, super clean car, and gave a heads up when traffic added a few minutes. Would book again.</div>
+            <div class="rt-review-date">Jun 14, 2026</div>
+          </div>
+          <div class="rt-review-row">
+            <div class="rt-review-top"><span class="rt-review-name">Monica L.</span><span class="rt-review-stars">★★★★☆</span></div>
+            <div class="rt-review-text">Great communication throughout. Ride was smooth, just arrived about 10 minutes later than the quoted ETA.</div>
+            <div class="rt-review-date">Jun 2, 2026</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIDER PROFILE -->
+    <div id="rider-view" class="rt-view">
+      <div class="rt-profile-header">
+        <div class="rt-avatar rider">CM</div>
+        <div class="rt-profile-info">
+          <div class="rt-profile-name-row">
+            <div class="rt-profile-name">Carlos M.</div>
+            <span class="rt-verified-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:11px;height:11px;"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>
+              Verified rider
+            </span>
+          </div>
+          <div class="rt-profile-sub">Member since April 2026 · Miami, FL</div>
+          <div class="rt-rating-row">
+            <span class="rt-rating-item"><span class="rt-dot stars"></span>4.8 from drivers</span>
+            <span class="rt-rating-item"><span class="rt-dot ontime"></span>Usually ready on time</span>
+          </div>
+          <div class="rt-rider-badge-row">
+            <span class="rt-rider-badge">8 completed trips</span>
+            <span class="rt-rider-badge">Phone verified</span>
+            <span class="rt-rider-badge">Payment method on file</span>
+          </div>
+        </div>
+        <div style="position:relative;">
+          <button class="rt-menu-btn" onclick="toggleMenu('rider-profile')">
+            <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+          </button>
+          <div class="rt-menu-dropdown" id="rider-profile-menu">
+            <button class="rt-menu-item" onclick="openReport('Carlos')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+              Report Carlos
+            </button>
+            <div class="rt-menu-divider"></div>
+            <button class="rt-menu-item danger" onclick="openBlockConfirm('Carlos')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M4.9 4.9l14.2 14.2"/></svg>
+              Block Carlos
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-label">Safety</div>
+        <div class="rt-card">
+          <div class="rt-safety-row">
+            <div class="rt-safety-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
+            <div>
+              <div class="rt-safety-text">Government ID verified</div>
+              <div class="rt-safety-sub">Confirmed identity matches account name</div>
+            </div>
+          </div>
+          <div class="rt-safety-row">
+            <div class="rt-safety-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
+            <div>
+              <div class="rt-safety-text">Phone number verified</div>
+              <div class="rt-safety-sub">Confirmed via one-time code</div>
+            </div>
+          </div>
+          <div class="rt-safety-row">
+            <div class="rt-safety-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
+            <div>
+              <div class="rt-safety-text">Payment method on file</div>
+              <div class="rt-safety-sub">Verified card, discourages fake bookings</div>
+            </div>
+          </div>
+          <div class="rt-safety-row">
+            <div class="rt-safety-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
+            <div>
+              <div class="rt-safety-text">Emergency contact on file</div>
+              <div class="rt-safety-sub">Used only if a trip needs to be escalated</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rt-section">
+        <button class="rt-emergency-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+          Share trip / emergency
+        </button>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-label">Trip history</div>
+        <div class="rt-card">
+          <div class="rt-history-row">
+            <div><div class="rt-history-route">Miami → Orlando</div><div class="rt-history-date">Jun 14, 2026</div></div>
+            <div class="rt-history-right"><div class="rt-history-price">$140</div><div class="rt-history-meta" style="color:#8C8A84;">w/ Rafael M.</div></div>
+          </div>
+          <div class="rt-history-row">
+            <div><div class="rt-history-route">Miami → Tampa</div><div class="rt-history-date">May 22, 2026</div></div>
+            <div class="rt-history-right"><div class="rt-history-price">$115</div><div class="rt-history-meta" style="color:#8C8A84;">w/ Priya S.</div></div>
+          </div>
+          <div class="rt-history-row">
+            <div><div class="rt-history-route">Miami → Jacksonville</div><div class="rt-history-date">May 3, 2026</div></div>
+            <div class="rt-history-right"><div class="rt-history-price">$225</div><div class="rt-history-meta" style="color:#8C8A84;">w/ David R.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-label">Driver feedback</div>
+        <div class="rt-card">
+          <div class="rt-review-row">
+            <div class="rt-review-top"><span class="rt-review-name">Rafael M.</span><span class="rt-review-stars">★★★★★</span></div>
+            <div class="rt-review-text">Ready right at pickup time, easy to communicate with. Great rider.</div>
+            <div class="rt-review-date">Jun 14, 2026</div>
+          </div>
+          <div class="rt-review-row">
+            <div class="rt-review-top"><span class="rt-review-name">Priya S.</span><span class="rt-review-stars">★★★★★</span></div>
+            <div class="rt-review-text">No issues at all, friendly and respectful of the car.</div>
+            <div class="rt-review-date">May 22, 2026</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="rt-report-modal-overlay" id="report-overlay">
+  <div class="rt-report-modal">
+    <div class="rt-report-modal-title">Report <span id="report-name">this user</span></div>
+    <div class="rt-report-modal-text">Your report is reviewed by our team. The other person won't be notified that you reported them.</div>
+    <div id="report-reasons">
+      <button class="rt-report-reason" onclick="selectReason(this)">Unsafe driving or behavior</button>
+      <button class="rt-report-reason" onclick="selectReason(this)">Inappropriate messages</button>
+      <button class="rt-report-reason" onclick="selectReason(this)">Didn't show up / no-show</button>
+      <button class="rt-report-reason" onclick="selectReason(this)">Vehicle didn't match listing</button>
+      <button class="rt-report-reason" onclick="selectReason(this)">Other safety concern</button>
+    </div>
+    <label class="rt-also-block-row">
+      <input type="checkbox" id="also-block-checkbox" />
+      <span>Also block <span class="report-block-name">this user</span> so we don't match again</span>
+    </label>
+    <div class="rt-report-modal-actions">
+      <button class="rt-btn-secondary" onclick="closeReport()">Cancel</button>
+      <button class="rt-btn-danger-solid" onclick="submitReport()">Submit report</button>
+    </div>
+  </div>
+</div>
+
+<div class="rt-report-modal-overlay" id="block-overlay">
+  <div class="rt-report-modal">
+    <div class="rt-report-modal-title">Block <span id="block-name">this user</span>?</div>
+    <div class="rt-report-modal-text">You won't see trips from this person again, and they won't be able to message or match with you. This can be undone later in your safety settings.</div>
+    <div class="rt-report-modal-actions">
+      <button class="rt-btn-secondary" onclick="closeBlock()">Cancel</button>
+      <button class="rt-btn-danger-solid" onclick="confirmBlock()">Block</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="rt-toast"></div>
+
+<script>
+function switchProfile(view) {
+  document.querySelectorAll('.rt-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.rt-view').forEach(v => v.classList.remove('active'));
+  document.getElementById('tab-' + view).classList.add('active');
+  document.getElementById(view + '-view').classList.add('active');
+}
+
+function toggleCost() {
+  document.getElementById('cost-toggle').classList.toggle('off');
+}
+
+let reportContext = null;
+let blockContext = null;
+let selectedReportReason = null;
+
+function toggleMenu(id) {
+  const menu = document.getElementById(id + '-menu');
+  const isOpen = menu.classList.contains('show');
+  document.querySelectorAll('.rt-menu-dropdown').forEach(m => m.classList.remove('show'));
+  if (!isOpen) menu.classList.add('show');
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.rt-menu-btn') && !e.target.closest('.rt-menu-dropdown')) {
+    document.querySelectorAll('.rt-menu-dropdown').forEach(m => m.classList.remove('show'));
+  }
+});
+
+function openReport(name) {
+  document.querySelectorAll('.rt-menu-dropdown').forEach(m => m.classList.remove('show'));
+  reportContext = { name };
+  selectedReportReason = null;
+  document.querySelectorAll('.rt-report-reason').forEach(r => r.classList.remove('selected'));
+  document.getElementById('report-name').textContent = name;
+  document.querySelectorAll('.report-block-name').forEach(el => el.textContent = name);
+  document.getElementById('also-block-checkbox').checked = false;
+  document.getElementById('report-overlay').classList.add('show');
+}
+
+function selectReason(el) {
+  document.querySelectorAll('.rt-report-reason').forEach(r => r.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedReportReason = el.textContent;
+}
+
+function closeReport() {
+  document.getElementById('report-overlay').classList.remove('show');
+  reportContext = null;
+}
+
+function submitReport() {
+  if (!selectedReportReason) {
+    showToast('Please select a reason before submitting');
+    return;
+  }
+  const alsoBlock = document.getElementById('also-block-checkbox').checked;
+  const name = reportContext ? reportContext.name : 'this user';
+  document.getElementById('report-overlay').classList.remove('show');
+  if (alsoBlock) {
+    showToast(`Report submitted and ${name} has been blocked.`);
+  } else {
+    showToast(`Report submitted. Our team will review this within 24 hours.`);
+  }
+  reportContext = null;
+}
+
+function openBlockConfirm(name) {
+  document.querySelectorAll('.rt-menu-dropdown').forEach(m => m.classList.remove('show'));
+  blockContext = { name };
+  document.getElementById('block-name').textContent = name;
+  document.getElementById('block-overlay').classList.add('show');
+}
+
+function closeBlock() {
+  document.getElementById('block-overlay').classList.remove('show');
+  blockContext = null;
+}
+
+function confirmBlock() {
+  const name = blockContext ? blockContext.name : 'this user';
+  document.getElementById('block-overlay').classList.remove('show');
+  showToast(`${name} has been blocked.`);
+  blockContext = null;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+
+</body>
+</html>

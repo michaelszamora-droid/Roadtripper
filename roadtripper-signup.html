@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roadtripper — Sign Up / Log In</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #F7F6F3;
+    color: #1A1A18;
+    padding: 24px 16px;
+  }
+  .rt-app {
+    max-width: 480px;
+    margin: 0 auto;
+    background: #FFFFFF;
+    border-radius: 16px;
+    border: 1px solid #E5E2DC;
+    overflow: hidden;
+  }
+  .rt-nav {
+    display: flex; align-items: center; justify-content: center;
+    padding: 18px 20px; border-bottom: 1px solid #E5E2DC;
+  }
+  .rt-logo { font-size: 19px; font-weight: 600; color: #1A1A18; letter-spacing: -0.3px; }
+  .rt-logo span { color: #1D9E75; }
+  .rt-main { padding: 28px 24px; min-height: 540px; }
+  .rt-screen { display: none; }
+  .rt-screen.active { display: block; }
+
+  /* Entry screen */
+  .rt-entry-title { font-size: 21px; font-weight: 700; color: #1A1A18; margin-bottom: 6px; text-align: center; }
+  .rt-entry-sub { font-size: 13px; color: #5F5E5A; text-align: center; margin-bottom: 28px; line-height: 1.5; }
+  .rt-entry-card {
+    display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 14px;
+    border: 1.5px solid #E5E2DC; cursor: pointer; margin-bottom: 12px; transition: all 0.15s; background: #FAFAF8;
+  }
+  .rt-entry-card:hover { border-color: #D8D5CD; background: #F7F6F3; }
+  .rt-entry-icon {
+    width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .rt-entry-icon.rider { background: #EAF1FB; }
+  .rt-entry-icon.driver { background: #E1F5EE; }
+  .rt-entry-icon svg { width: 22px; height: 22px; }
+  .rt-entry-icon.rider svg { color: #2E5A94; }
+  .rt-entry-icon.driver svg { color: #0F6E56; }
+  .rt-entry-text-title { font-size: 15px; font-weight: 600; color: #1A1A18; }
+  .rt-entry-text-sub { font-size: 12px; color: #8C8A84; margin-top: 1px; }
+  .rt-entry-chevron { margin-left: auto; flex-shrink: 0; }
+  .rt-entry-chevron svg { width: 16px; height: 16px; color: #B5B2AA; }
+
+  .rt-divider-row { display: flex; align-items: center; gap: 10px; margin: 22px 0; }
+  .rt-divider-line { flex: 1; height: 1px; background: #E5E2DC; }
+  .rt-divider-text { font-size: 11px; color: #B5B2AA; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .rt-login-prompt { text-align: center; font-size: 13px; color: #5F5E5A; }
+  .rt-login-link { color: #1D9E75; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+
+  /* Form elements */
+  .rt-back-row { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; cursor: pointer; }
+  .rt-back-row svg { width: 16px; height: 16px; color: #5F5E5A; }
+  .rt-back-text { font-size: 13px; color: #5F5E5A; font-weight: 500; }
+
+  .rt-form-title { font-size: 19px; font-weight: 700; color: #1A1A18; margin-bottom: 4px; }
+  .rt-form-sub { font-size: 13px; color: #5F5E5A; margin-bottom: 22px; line-height: 1.5; }
+
+  .rt-step-indicator { display: flex; gap: 6px; margin-bottom: 22px; }
+  .rt-step-dot { height: 4px; flex: 1; border-radius: 2px; background: #E5E2DC; transition: background 0.2s; }
+  .rt-step-dot.done { background: #1D9E75; }
+
+  .rt-form-group { margin-bottom: 14px; }
+  .rt-form-group label { display: block; font-size: 12.5px; font-weight: 600; color: #5F5E5A; margin-bottom: 6px; }
+  .rt-form-group input, .rt-form-group select {
+    width: 100%; font-size: 14px; padding: 11px 13px; border-radius: 10px;
+    border: 1px solid #E5E2DC; outline: none; font-family: inherit; background: #FAFAF8;
+  }
+  .rt-form-group input:focus, .rt-form-group select:focus { border-color: #1D9E75; background: white; }
+  .rt-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .rt-auth-toggle { display: flex; gap: 4px; background: #F2F1ED; border-radius: 10px; padding: 3px; margin-bottom: 18px; }
+  .rt-auth-toggle-btn {
+    flex: 1; padding: 8px; border-radius: 8px; font-size: 12.5px; font-weight: 600; text-align: center;
+    cursor: pointer; border: none; background: transparent; color: #5F5E5A; font-family: inherit; transition: all 0.15s;
+  }
+  .rt-auth-toggle-btn.active { background: white; color: #1A1A18; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+
+  .rt-otp-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .rt-otp-row input {
+    width: 44px; height: 50px; text-align: center; font-size: 18px; font-weight: 600;
+    border-radius: 10px; border: 1px solid #E5E2DC; outline: none; background: #FAFAF8;
+  }
+  .rt-otp-row input:focus { border-color: #1D9E75; background: white; }
+  .rt-resend-row { text-align: center; font-size: 12.5px; color: #8C8A84; margin-bottom: 18px; }
+  .rt-resend-link { color: #1D9E75; font-weight: 600; cursor: pointer; }
+
+  .rt-upload-box {
+    border: 1.5px dashed #D8D5CD; border-radius: 12px; padding: 20px 16px; text-align: center;
+    cursor: pointer; background: #FAFAF8; transition: all 0.15s; margin-bottom: 12px;
+  }
+  .rt-upload-box:hover { border-color: #1D9E75; background: #F7F6F3; }
+  .rt-upload-box.filled { border-style: solid; border-color: #5DCAA5; background: #E1F5EE; }
+  .rt-upload-icon { width: 28px; height: 28px; color: #8C8A84; margin: 0 auto 8px; }
+  .rt-upload-box.filled .rt-upload-icon { color: #0F6E56; }
+  .rt-upload-title { font-size: 13px; font-weight: 600; color: #1A1A18; margin-bottom: 2px; }
+  .rt-upload-sub { font-size: 11.5px; color: #8C8A84; }
+
+  .rt-verify-checklist { background: #FAFAF8; border: 1px solid #E5E2DC; border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; }
+  .rt-platform-select {
+    display: flex; align-items: center; gap: 10px; padding: 13px 14px; border-radius: 12px;
+    border: 1.5px solid #E5E2DC; cursor: pointer; margin-bottom: 8px; transition: all 0.15s; background: #FAFAF8;
+  }
+  .rt-platform-select:hover { border-color: #D8D5CD; }
+  .rt-platform-select.checked { border-color: #5DCAA5; background: #E1F5EE; }
+  .rt-platform-select input { width: 17px; height: 17px; cursor: pointer; flex-shrink: 0; accent-color: #1D9E75; }
+  .rt-platform-name { font-size: 14px; font-weight: 600; color: #1A1A18; }
+
+  .rt-cost-preview {
+    background: #E1F5EE; border: 1px solid #5DCAA5; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px;
+  }
+  .rt-cost-preview-header {
+    display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: #085041;
+    text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 8px;
+  }
+  .rt-cost-preview-header svg { width: 13px; height: 13px; }
+  .rt-cost-preview-val { font-size: 24px; font-weight: 700; color: #0F6E56; }
+  .rt-cost-preview-unit { font-size: 13px; font-weight: 500; color: #5F5E5A; margin-left: 4px; }
+  .rt-cost-preview-sub { font-size: 11.5px; color: #5F5E5A; line-height: 1.5; margin-top: 6px; }
+  .rt-verify-check-row { display: flex; align-items: flex-start; gap: 9px; font-size: 12.5px; color: #5F5E5A; margin-bottom: 9px; line-height: 1.4; }
+  .rt-verify-check-row:last-child { margin-bottom: 0; }
+  .rt-verify-check-row svg { width: 14px; height: 14px; color: #5DCAA5; flex-shrink: 0; margin-top: 1px; }
+
+  .rt-pending-banner {
+    display: flex; align-items: flex-start; gap: 10px; padding: 14px 16px; border-radius: 12px;
+    background: #FAF7EF; border: 1px solid #E8DDB8; margin-bottom: 18px;
+  }
+  .rt-pending-banner svg { width: 18px; height: 18px; color: #B08A2E; flex-shrink: 0; margin-top: 1px; }
+  .rt-pending-title { font-size: 13px; font-weight: 600; color: #7A6420; margin-bottom: 2px; }
+  .rt-pending-text { font-size: 12px; color: #7A6420; line-height: 1.5; }
+
+  .rt-success-icon-wrap { display: flex; justify-content: center; margin-bottom: 18px; }
+  .rt-success-icon {
+    width: 64px; height: 64px; border-radius: 50%; background: #E1F5EE;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .rt-success-icon svg { width: 30px; height: 30px; color: #1D9E75; }
+
+  .rt-checkbox-row { display: flex; align-items: flex-start; gap: 9px; font-size: 12.5px; color: #5F5E5A; line-height: 1.45; margin-bottom: 18px; }
+  .rt-checkbox-row input { margin-top: 2px; flex-shrink: 0; cursor: pointer; }
+  .rt-checkbox-row a { color: #1D9E75; text-decoration: underline; text-underline-offset: 2px; }
+
+  .rt-btn-primary {
+    width: 100%; padding: 13px; border-radius: 10px; background: #1D9E75; color: #04342C;
+    border: none; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; transition: opacity 0.15s;
+  }
+  .rt-btn-primary:hover { opacity: 0.88; }
+  .rt-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .rt-btn-secondary-full {
+    width: 100%; padding: 13px; border-radius: 10px; background: #F2F1ED; color: #1A1A18;
+    border: none; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; margin-top: 10px;
+  }
+
+  .rt-toast {
+    display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #085041; color: #9FE1CB; padding: 11px 20px; border-radius: 10px;
+    font-size: 13px; z-index: 100; white-space: nowrap; max-width: 90%; text-align: center;
+  }
+  .rt-toast.show { display: block; }
+</style>
+</head>
+<body>
+
+<div class="rt-app">
+  <nav class="rt-nav">
+    <div class="rt-logo">road<span>tripper</span></div>
+  </nav>
+
+  <div class="rt-main">
+
+    <!-- ENTRY SCREEN -->
+    <div id="screen-entry" class="rt-screen active">
+      <div class="rt-entry-title">Welcome to Roadtripper</div>
+      <div class="rt-entry-sub">Long-distance rides across Florida, your way. Choose how you'll use the app.</div>
+
+      <div class="rt-entry-card" onclick="goTo('rider-signup-1')">
+        <div class="rt-entry-icon rider">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg>
+        </div>
+        <div>
+          <div class="rt-entry-text-title">I need a ride</div>
+          <div class="rt-entry-text-sub">Post a trip and find a driver</div>
+        </div>
+        <div class="rt-entry-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+      </div>
+
+      <div class="rt-entry-card" onclick="goTo('driver-signup-1')">
+        <div class="rt-entry-icon driver">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><path d="M3 16a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2z"/><circle cx="7" cy="17.5" r="1.2"/><circle cx="17" cy="17.5" r="1.2"/></svg>
+        </div>
+        <div>
+          <div class="rt-entry-text-title">I want to drive</div>
+          <div class="rt-entry-text-sub">Active Uber or Lyft account required</div>
+        </div>
+        <div class="rt-entry-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+      </div>
+
+      <div class="rt-divider-row"><div class="rt-divider-line"></div><div class="rt-divider-text">or</div><div class="rt-divider-line"></div></div>
+
+      <div class="rt-login-prompt">Already have an account? <span class="rt-login-link" onclick="goTo('login')">Log in</span></div>
+    </div>
+
+    <!-- LOGIN SCREEN -->
+    <div id="screen-login" class="rt-screen">
+      <div class="rt-back-row" onclick="goTo('entry')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        <span class="rt-back-text">Back</span>
+      </div>
+      <div class="rt-form-title">Log in</div>
+      <div class="rt-form-sub">Welcome back. Use whichever method you signed up with.</div>
+
+      <div class="rt-auth-toggle">
+        <button class="rt-auth-toggle-btn active" id="login-toggle-email" onclick="setLoginMethod('email')">Email</button>
+        <button class="rt-auth-toggle-btn" id="login-toggle-phone" onclick="setLoginMethod('phone')">Phone</button>
+      </div>
+
+      <div id="login-email-fields">
+        <div class="rt-form-group">
+          <label>Email address</label>
+          <input type="email" placeholder="you@example.com" />
+        </div>
+        <div class="rt-form-group">
+          <label>Password</label>
+          <input type="password" placeholder="••••••••" />
+        </div>
+      </div>
+
+      <div id="login-phone-fields" style="display:none;">
+        <div class="rt-form-group">
+          <label>Phone number</label>
+          <input type="tel" placeholder="(305) 555-0123" />
+        </div>
+      </div>
+
+      <button class="rt-btn-primary" onclick="showToast('Logging in...')">Log in</button>
+      <div class="rt-login-prompt" style="margin-top:16px;">Don't have an account? <span class="rt-login-link" onclick="goTo('entry')">Sign up</span></div>
+    </div>
+
+    <!-- RIDER SIGNUP STEP 1: basic info -->
+    <div id="screen-rider-signup-1" class="rt-screen">
+      <div class="rt-back-row" onclick="goTo('entry')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        <span class="rt-back-text">Back</span>
+      </div>
+      <div class="rt-step-indicator">
+        <div class="rt-step-dot done"></div><div class="rt-step-dot"></div><div class="rt-step-dot"></div>
+      </div>
+      <div class="rt-form-title">Create your rider account</div>
+      <div class="rt-form-sub">Just the basics to get started.</div>
+
+      <div class="rt-form-row">
+        <div class="rt-form-group">
+          <label>First name</label>
+          <input type="text" placeholder="Carlos" />
+        </div>
+        <div class="rt-form-group">
+          <label>Last initial</label>
+          <input type="text" placeholder="M" maxlength="1" />
+        </div>
+      </div>
+
+      <div class="rt-auth-toggle">
+        <button class="rt-auth-toggle-btn active" id="rider-toggle-email" onclick="setSignupMethod('rider', 'email')">Email</button>
+        <button class="rt-auth-toggle-btn" id="rider-toggle-phone" onclick="setSignupMethod('rider', 'phone')">Phone</button>
+      </div>
+
+      <div id="rider-email-fields">
+        <div class="rt-form-group">
+          <label>Email address</label>
+          <input type="email" placeholder="you@example.com" />
+        </div>
+        <div class="rt-form-group">
+          <label>Password</label>
+          <input type="password" placeholder="At least 8 characters" />
+        </div>
+      </div>
+
+      <div id="rider-phone-fields" style="display:none;">
+        <div class="rt-form-group">
+          <label>Phone number</label>
+          <input type="tel" placeholder="(305) 555-0123" />
+        </div>
+      </div>
+
+      <div class="rt-form-group">
+        <label>Home city</label>
+        <input type="text" placeholder="e.g. Doral, FL" />
+      </div>
+
+      <button class="rt-btn-primary" onclick="goTo('rider-signup-2')">Continue</button>
+    </div>
+
+    <!-- RIDER SIGNUP STEP 2: ID verification -->
+    <div id="screen-rider-signup-2" class="rt-screen">
+      <div class="rt-back-row" onclick="goTo('rider-signup-1')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        <span class="rt-back-text">Back</span>
+      </div>
+      <div class="rt-step-indicator">
+        <div class="rt-step-dot done"></div><div class="rt-step-dot done"></div><div class="rt-step-dot"></div>
+      </div>
+      <div class="rt-form-title">Verify your identity</div>
+      <div class="rt-form-sub">Required for every rider. This keeps the platform safe for everyone, including the drivers you'll be riding with.</div>
+
+      <div class="rt-upload-box" id="id-upload-box" onclick="fillUpload('id-upload-box')">
+        <svg class="rt-upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="13" rx="2"/><circle cx="8" cy="12.5" r="2"/><path d="M14 11h4M14 14h4"/></svg>
+        <div class="rt-upload-title">Upload government-issued ID</div>
+        <div class="rt-upload-sub">Driver's license, state ID, or passport</div>
+      </div>
+
+      <div class="rt-form-group">
+        <label>Phone number for verification</label>
+        <input type="tel" placeholder="(305) 555-0123" />
+      </div>
+
+      <div class="rt-verify-checklist">
+        <div class="rt-verify-check-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+          ID is checked automatically, usually within a few minutes
+        </div>
+        <div class="rt-verify-check-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+          Your name and photo are never shared with other users
+        </div>
+      </div>
+
+      <button class="rt-btn-primary" onclick="goTo('rider-signup-3')">Continue</button>
+    </div>
+
+    <!-- RIDER SIGNUP STEP 3: emergency contact + terms -->
+    <div id="screen-rider-signup-3" class="rt-screen">
+      <div class="rt-back-row" onclick="goTo('rider-signup-2')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        <span class="rt-back-text">Back</span>
+      </div>
+      <div class="rt-step-indicator">
+        <div class="rt-step-dot done"></div><div class="rt-step-dot done"></div><div class="rt-step-dot done"></div>
+      </div>
+      <div class="rt-form-title">Almost done</div>
+      <div class="rt-form-sub">An emergency contact helps us help you, if it's ever needed.</div>
+
+      <div class="rt-form-row">
+        <div class="rt-form-group">
+          <label>Emergency contact name</label>
+          <input type="text" placeholder="Full name" />
+        </div>
+        <div class="rt-form-group">
+          <label>Their phone number</label>
+          <input type="tel" placeholder="(305) 555-0123" />
+        </div>
+      </div>
+
+      <label class="rt-checkbox-row">
+        <input type="checkbox" id="rider-terms-check" onchange="toggleSubmitButton('rider')" />
+        <span>I understand Roadtripper is a connection platform, not a dispatch service, and I agree to the <a href="#">Terms of Service</a> and <a href="#">Safety Guidelines</a>.</span>
+      </label>
+
+      <button class="rt-btn-primary" id="rider-submit-btn" disabled onclick="goTo('rider-success')">Create account</button>
+    </div>
+
+    <!-- RIDER SUCCESS -->
+    <div id="screen-rider-success" class="rt-screen">
+      <div class="rt-success-icon-wrap">
+        <div class="rt-success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg></div>
+      </div>
+      <div class="rt-form-title" style="text-align:center;">You're all set, Carlos</div>
+      <div class="rt-form-sub" style="text-align:center;">Your ID is being verified, this usually takes just a few minutes. You can start browsing trips right away.</div>
+      <button class="rt-btn-primary" onclick="showToast('Heading to the trip board...')">Start using Roadtripper</button>
+    </div>
+
+    <!-- DRIVER SIGNUP STEP 1: basic info -->
+    <div id="screen-driver-signup-1" class="rt-screen">
+      <div class="rt-back-row" onclick="goTo('entry')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        <span class="rt-back-text">Back</span>
+      </div>
+      <div class="rt-step-indicator">
+        <div class="rt-step-dot done"></div><div class="rt-step-dot"></div><div class="rt-step-dot"></div><div class="rt-step-dot"></div>
+      </div>
+      <div class="rt-form-title">Create your driver account</div>
+      <div class="rt-form-sub">Just the basics to get started.</div>
+
+      <div class="rt-form-row">
+        <div class="rt-form-group">
+          <label>First name</label>
+          <input type="text" placeholder="Rafael" />
+        </div>
+        <div class="rt-form-group">
+          <label>Last initial</label>
+          <input type="text" placeholder="M" maxlength="1" />
+        </div>
+      </div>
+
+      <div class="rt-auth-toggle">
+        <button class="rt-auth-toggle-btn active" id="driver-toggle-email" onclick="setSignupMethod('driver', 'email')">Email</button>
+        <button class="rt-auth-toggle-btn" id="driver-toggle-phone" onclick="setSignupMethod('driver', 'phone')">Phone</button>
+      </div>
+
+      <div id="driver-email-fields">
+        <div class="rt-form-group">
+          <label>Email address</label>
+          <input type="email" placeholder="you@example.com" />
+        </div>
+        <div class="rt-form-group">
+          <label>Password</label>
+          <input type="password" placeholder="At least 8 characters" />
+        </div>
+      </div>
+
+      <div id="driver-phone-fields" style="display:none;">
+        <div class="rt-form-group">
+          <label>Phone number</label>
+          <input type="tel" placeholder="(305) 555-0123" />
+        </div>
+      </div>
+
+      <div class="rt-form-group">
+        <label>Home city</label>
+        <input type="text" placeholder="e.g. Doral, FL" />
+      </div>
+
+      <button class="rt-btn-primary" onclick="goTo('driver-signup-2')">Continue</button>
+    </div>
+
+    <!-- DRIVER SIGNUP STEP 2: Uber/Lyft verification -->
+    <div id="screen-driver-signup-2" class="rt-screen">
+      <div class="rt-back-row" onclick="goTo('driver-signup-1')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        <span class="rt-back-text">Back</span>
+      </div>
+      <div class="rt-step-indicator">
+        <div class="rt-step-dot done"></div><div class="rt-step-dot done"></div><div class="rt-step-dot"></div><div class="rt-step-dot"></div>
+      </div>
+      <div class="rt-form-title">Verify your driving history</div>
+      <div class="rt-form-sub">Roadtripper only accepts experienced, already-vetted drivers. Select at least one platform you're active on, both is fine too.</div>
+
+      <div class="rt-verify-checklist">
+        <div class="rt-verify-check-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+          Active driver account on Uber, Lyft, or both
+        </div>
+        <div class="rt-verify-check-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+          4.0 stars or higher on each platform you select
+        </div>
+        <div class="rt-verify-check-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+          Minimum 100 completed trips on each platform you select
+        </div>
+      </div>
+
+      <label class="rt-platform-select" id="uber-select" onclick="togglePlatform('uber')">
+        <input type="checkbox" id="uber-checkbox" onclick="syncPlatform(event, 'uber')" />
+        <span class="rt-platform-name">I drive for Uber</span>
+      </label>
+      <div class="rt-upload-box" id="uber-upload-box" style="display:none;" onclick="fillUpload('uber-upload-box')">
+        <svg class="rt-upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="13" rx="2"/><circle cx="8" cy="12.5" r="2"/><path d="M14 11h4M14 14h4"/></svg>
+        <div class="rt-upload-title">Screenshot of Uber driver profile</div>
+        <div class="rt-upload-sub">Showing your rating and trip count</div>
+      </div>
+
+      <label class="rt-platform-select" id="lyft-select" onclick="togglePlatform('lyft')">
+        <input type="checkbox" id="lyft-checkbox" onclick="syncPlatform(event, 'lyft')" />
+        <span class="rt-platform-name">I drive for Lyft</span>
+      </label>
+      <div class="rt-upload-box" id="lyft-upload-box" style="display:none;" onclick="fillUpload('lyft-upload-box')">
+        <svg class="rt-upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="13" rx="2"/><circle cx="8" cy="12.5" r="2"/><path d="M14 11h4M14 14h4"/></svg>
+        <div class="rt-upload-title">Screenshot of Lyft driver profile</div>
+        <div class="rt-upload-sub">Showing your rating and trip count</div>
+      </div>
+
+      <button class="rt-btn-primary" id="platform-continue-btn" disabled onclick="goTo('driver-signup-3')">Continue</button>
+    </div>
+
+    <!-- DRIVER SIGNUP STEP 3: vehicle + safety -->
+    <div id="screen-driver-signup-3" class="rt-screen">
+      <div class="rt-back-row" onclick="goTo('driver-signup-2')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        <span class="rt-back-text">Back</span>
+      </div>
+      <div class="rt-step-indicator">
+        <div class="rt-step-dot done"></div><div class="rt-step-dot done"></div><div class="rt-step-dot done"></div><div class="rt-step-dot"></div>
+      </div>
+      <div class="rt-form-title">Your vehicle</div>
+      <div class="rt-form-sub">Riders see this before they accept a match. Your year, make, and model help us estimate your driving costs automatically.</div>
+
+      <div class="rt-form-row">
+        <div class="rt-form-group">
+          <label>Year</label>
+          <select id="vehicle-year" onchange="updateCostPreview()">
+            <option value="">Select year</option>
+            <option>2026</option><option>2025</option><option>2024</option><option>2023</option>
+            <option>2022</option><option>2021</option><option>2020</option><option>2019</option>
+            <option>Older than 2019</option>
+          </select>
+        </div>
+        <div class="rt-form-group">
+          <label>Color</label>
+          <input type="text" placeholder="Black" />
+        </div>
+      </div>
+
+      <div class="rt-form-row">
+        <div class="rt-form-group">
+          <label>Make</label>
+          <select id="vehicle-make" onchange="populateModels(); updateCostPreview()">
+            <option value="">Select make</option>
+          </select>
+        </div>
+        <div class="rt-form-group" id="model-group">
+          <label>Model</label>
+          <select id="vehicle-model" onchange="updateCostPreview()" disabled>
+            <option value="">Select make first</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="rt-form-group">
+        <label>License plate</label>
+        <input type="text" placeholder="ABC 1234" />
+      </div>
+
+      <div class="rt-cost-preview" id="cost-preview" style="display:none;">
+        <div class="rt-cost-preview-header">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Estimated driving cost
+        </div>
+        <div class="rt-cost-preview-val" id="cost-preview-val">$0.41<span class="rt-cost-preview-unit">/mile</span></div>
+        <div class="rt-cost-preview-sub" id="cost-preview-sub">Based on average gas, maintenance, insurance, and depreciation for this vehicle. You can review or adjust this anytime in your driver settings.</div>
+      </div>
+
+      <div class="rt-upload-box" id="vehicle-upload-box" onclick="fillUpload('vehicle-upload-box')">
+        <svg class="rt-upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><path d="M3 16a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2z"/></svg>
+        <div class="rt-upload-title">Photo of your vehicle</div>
+        <div class="rt-upload-sub">A current photo, used for rider matching</div>
+      </div>
+
+      <button class="rt-btn-primary" onclick="goTo('driver-signup-4')">Continue</button>
+    </div>
+
+    <!-- DRIVER SIGNUP STEP 4: emergency contact + terms -->
+    <div id="screen-driver-signup-4" class="rt-screen">
+      <div class="rt-back-row" onclick="goTo('driver-signup-3')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        <span class="rt-back-text">Back</span>
+      </div>
+      <div class="rt-step-indicator">
+        <div class="rt-step-dot done"></div><div class="rt-step-dot done"></div><div class="rt-step-dot done"></div><div class="rt-step-dot done"></div>
+      </div>
+      <div class="rt-form-title">Almost done</div>
+      <div class="rt-form-sub">An emergency contact helps us help you, if it's ever needed.</div>
+
+      <div class="rt-form-row">
+        <div class="rt-form-group">
+          <label>Emergency contact name</label>
+          <input type="text" placeholder="Full name" />
+        </div>
+        <div class="rt-form-group">
+          <label>Their phone number</label>
+          <input type="tel" placeholder="(305) 555-0123" />
+        </div>
+      </div>
+
+      <label class="rt-checkbox-row">
+        <input type="checkbox" id="driver-terms-check" onchange="toggleSubmitButton('driver')" />
+        <span>I understand Roadtripper is a connection platform, not a dispatch service, and I agree to the <a href="#">Terms of Service</a>, <a href="#">Driver Agreement</a>, and <a href="#">Safety Guidelines</a>.</span>
+      </label>
+
+      <button class="rt-btn-primary" id="driver-submit-btn" disabled onclick="goTo('driver-pending')">Submit application</button>
+    </div>
+
+    <!-- DRIVER PENDING REVIEW -->
+    <div id="screen-driver-pending" class="rt-screen">
+      <div class="rt-success-icon-wrap">
+        <div class="rt-success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg></div>
+      </div>
+      <div class="rt-form-title" style="text-align:center;">Application submitted, Rafael</div>
+      <div class="rt-form-sub" style="text-align:center;">We're reviewing your Uber/Lyft verification and vehicle details now.</div>
+
+      <div class="rt-pending-banner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        <div>
+          <div class="rt-pending-title">Manual review in progress</div>
+          <div class="rt-pending-text">Most applications are reviewed within 24 hours. We'll notify you the moment you're approved to start accepting trips.</div>
+        </div>
+      </div>
+
+      <button class="rt-btn-primary" onclick="showToast('Heading to your dashboard...')">Go to my dashboard</button>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast" class="rt-toast"></div>
+
+<script>
+// Cost-per-mile figures researched from KBB, Edmunds, CarEdge, and AAA Your Driving Costs (2025-2026 data).
+// Includes gas, maintenance, insurance, and depreciation. Excludes financing, since that varies by driver.
+const VEHICLE_DATA = {
+  "Toyota": {
+    models: {
+      "Camry": 0.50,
+      "Corolla": 0.38,
+      "RAV4": 0.45,
+      "Highlander": 0.52,
+      "Prius": 0.34
+    }
+  },
+  "Honda": {
+    models: {
+      "Accord": 0.44,
+      "Civic": 0.37,
+      "CR-V": 0.47,
+      "Odyssey": 0.53
+    }
+  },
+  "Hyundai": {
+    models: {
+      "Sonata": 0.41,
+      "Elantra": 0.37,
+      "Tucson": 0.45,
+      "Ioniq 5": 0.43
+    }
+  },
+  "Nissan": {
+    models: {
+      "Altima": 0.42,
+      "Sentra": 0.36,
+      "Rogue": 0.46
+    }
+  },
+  "Kia": {
+    models: {
+      "K5": 0.40,
+      "Forte": 0.36,
+      "Sportage": 0.44
+    }
+  },
+  "Chevrolet": {
+    models: {
+      "Malibu": 0.43,
+      "Equinox": 0.46
+    }
+  },
+  "Ford": {
+    models: {
+      "Fusion": 0.43,
+      "Escape": 0.46
+    }
+  },
+  "Other / not listed": {
+    models: {}
+  }
+};
+
+function populateMakes() {
+  const makeSelect = document.getElementById('vehicle-make');
+  Object.keys(VEHICLE_DATA).forEach(make => {
+    const opt = document.createElement('option');
+    opt.value = make;
+    opt.textContent = make;
+    makeSelect.appendChild(opt);
+  });
+}
+
+function populateModels() {
+  const make = document.getElementById('vehicle-make').value;
+  const modelSelect = document.getElementById('vehicle-model');
+  const modelGroup = document.getElementById('model-group');
+
+  // Remove any existing free-text input
+  const existingInput = document.getElementById('vehicle-model-text');
+  if (existingInput) existingInput.remove();
+  modelSelect.style.display = 'block';
+  modelSelect.innerHTML = '';
+
+  if (!make) {
+    modelSelect.disabled = true;
+    modelSelect.innerHTML = '<option value="">Select make first</option>';
+    updateCostPreview();
+    return;
+  }
+
+  if (make === 'Other / not listed') {
+    modelSelect.style.display = 'none';
+    const label = document.querySelector('#model-group label');
+    if (label) label.textContent = 'Make & Model';
+    const textInput = document.createElement('input');
+    textInput.type = 'text';
+    textInput.id = 'vehicle-model-text';
+    textInput.placeholder = 'e.g. Mazda 6, VW Jetta';
+    textInput.style.width = '100%';
+    textInput.style.fontSize = '14px';
+    textInput.addEventListener('input', updateCostPreview);
+    modelGroup.appendChild(textInput);
+    updateCostPreview();
+    return;
+  }
+
+  // Reset label back to Model in case user switches back from Other
+  const label = document.querySelector('#model-group label');
+  if (label) label.textContent = 'Model';
+
+  modelSelect.disabled = false;
+  const defaultOpt = document.createElement('option');
+  defaultOpt.value = '';
+  defaultOpt.textContent = 'Select model';
+  modelSelect.appendChild(defaultOpt);
+  Object.keys(VEHICLE_DATA[make].models).forEach(model => {
+    const opt = document.createElement('option');
+    opt.value = model;
+    opt.textContent = model;
+    modelSelect.appendChild(opt);
+  });
+  updateCostPreview();
+}
+
+function updateCostPreview() {
+  const make = document.getElementById('vehicle-make').value;
+  const modelSelect = document.getElementById('vehicle-model');
+  const modelText = document.getElementById('vehicle-model-text');
+  const preview = document.getElementById('cost-preview');
+  const previewVal = document.getElementById('cost-preview-val');
+  const previewSub = document.getElementById('cost-preview-sub');
+
+  if (!make) { preview.style.display = 'none'; return; }
+
+  if (make === 'Other / not listed') {
+    const typedModel = modelText ? modelText.value.trim() : '';
+    if (!typedModel) { preview.style.display = 'none'; return; }
+    previewVal.innerHTML = `$0.42<span class="rt-cost-preview-unit">/mile</span>`;
+    previewSub.textContent = `We don't have specific data for a ${typedModel} yet — we've used the average for a mid-size sedan ($0.42/mi). You can adjust this in your driver settings after sign-up.`;
+    preview.style.display = 'block';
+    return;
+  }
+
+  const model = modelSelect ? modelSelect.value : '';
+  if (!model) { preview.style.display = 'none'; return; }
+
+  const costPerMile = VEHICLE_DATA[make].models[model];
+  previewVal.innerHTML = `$${costPerMile.toFixed(2)}<span class="rt-cost-preview-unit">/mile</span>`;
+  previewSub.textContent = `Based on average gas, maintenance, insurance, and depreciation for a ${make} ${model}. You can review or adjust this anytime in your driver settings.`;
+  preview.style.display = 'block';
+}
+
+function goTo(screen) {
+  document.querySelectorAll('.rt-screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + screen).classList.add('active');
+}
+
+function setLoginMethod(method) {
+  document.getElementById('login-toggle-email').classList.toggle('active', method === 'email');
+  document.getElementById('login-toggle-phone').classList.toggle('active', method === 'phone');
+  document.getElementById('login-email-fields').style.display = method === 'email' ? 'block' : 'none';
+  document.getElementById('login-phone-fields').style.display = method === 'phone' ? 'block' : 'none';
+}
+
+function setSignupMethod(role, method) {
+  document.getElementById(role + '-toggle-email').classList.toggle('active', method === 'email');
+  document.getElementById(role + '-toggle-phone').classList.toggle('active', method === 'phone');
+  document.getElementById(role + '-email-fields').style.display = method === 'email' ? 'block' : 'none';
+  document.getElementById(role + '-phone-fields').style.display = method === 'phone' ? 'block' : 'none';
+}
+
+function togglePlatform(platform) {
+  const checkbox = document.getElementById(platform + '-checkbox');
+  checkbox.checked = !checkbox.checked;
+  applyPlatformState(platform);
+}
+
+function syncPlatform(event, platform) {
+  event.stopPropagation();
+  applyPlatformState(platform);
+}
+
+function applyPlatformState(platform) {
+  const checkbox = document.getElementById(platform + '-checkbox');
+  const select = document.getElementById(platform + '-select');
+  const uploadBox = document.getElementById(platform + '-upload-box');
+  select.classList.toggle('checked', checkbox.checked);
+  uploadBox.style.display = checkbox.checked ? 'block' : 'none';
+  if (!checkbox.checked) {
+    uploadBox.classList.remove('filled');
+  }
+  updatePlatformContinue();
+}
+
+function updatePlatformContinue() {
+  const uberChecked = document.getElementById('uber-checkbox').checked;
+  const lyftChecked = document.getElementById('lyft-checkbox').checked;
+  document.getElementById('platform-continue-btn').disabled = !(uberChecked || lyftChecked);
+}
+
+function fillUpload(id) {
+  const box = document.getElementById(id);
+  const isFilled = box.classList.toggle('filled');
+  const title = box.querySelector('.rt-upload-title');
+  const sub = box.querySelector('.rt-upload-sub');
+  if (isFilled) {
+    box.dataset.originalTitle = title.textContent;
+    box.dataset.originalSub = sub.textContent;
+    title.textContent = 'Uploaded ✓';
+    sub.textContent = 'Tap to replace';
+  } else {
+    title.textContent = box.dataset.originalTitle;
+    sub.textContent = box.dataset.originalSub;
+  }
+}
+
+function toggleSubmitButton(role) {
+  const checked = document.getElementById(role + '-terms-check').checked;
+  document.getElementById(role + '-submit-btn').disabled = !checked;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+populateMakes();
+</script>
+
+</body>
+</html>

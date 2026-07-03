@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roadtripper — Marketplace</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #F7F6F3; color: #1A1A18; padding: 24px 16px;
+  }
+  .rt-app { max-width: 960px; margin: 0 auto; background: #FFFFFF; border-radius: 16px; border: 1px solid #E5E2DC; overflow: hidden; }
+  .rt-nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #E5E2DC; }
+  .rt-logo { font-size: 18px; font-weight: 600; color: #1A1A18; letter-spacing: -0.3px; }
+  .rt-logo span { color: #1D9E75; }
+  .rt-nav-tabs { display: flex; gap: 4px; }
+  .rt-tab { padding: 7px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; border: 1px solid transparent; color: #5F5E5A; background: transparent; transition: all 0.15s; font-family: inherit; }
+  .rt-tab.active { background: #F2F1ED; border-color: #E5E2DC; color: #1A1A18; font-weight: 600; }
+  .rt-tab:hover:not(.active) { background: #F7F6F3; }
+  .rt-body { display: grid; grid-template-columns: 340px 1fr; min-height: 640px; }
+  .rt-sidebar { border-right: 1px solid #E5E2DC; padding: 20px; overflow-y: auto; max-height: 640px; }
+  .rt-main { padding: 20px; overflow-y: auto; max-height: 640px; }
+  .rt-section-label { font-size: 11px; font-weight: 600; color: #8C8A84; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px; }
+  .rt-form-group { margin-bottom: 12px; }
+  .rt-form-group label { display: block; font-size: 13px; color: #5F5E5A; margin-bottom: 5px; font-weight: 500; }
+  .rt-form-group input, .rt-form-group select { width: 100%; font-size: 14px; padding: 9px 12px; border: 1px solid #E5E2DC; border-radius: 8px; outline: none; font-family: inherit; background: #FAFAF8; }
+  .rt-form-group input:focus, .rt-form-group select:focus { border-color: #1D9E75; background: white; }
+  .rt-form-group textarea { width: 100%; font-size: 13px; padding: 9px 12px; border: 1px solid #E5E2DC; border-radius: 8px; outline: none; font-family: inherit; background: #FAFAF8; resize: vertical; min-height: 60px; }
+  .rt-form-group textarea:focus { border-color: #1D9E75; background: white; }
+  .rt-price-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .rt-divider { border: none; border-top: 1px solid #E5E2DC; margin: 14px 0; }
+  .rt-btn-primary { width: 100%; padding: 11px; background: #1D9E75; color: #04342C; border: none; border-radius: 9px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 6px; transition: opacity 0.15s; font-family: inherit; }
+  .rt-btn-primary:hover { opacity: 0.88; }
+  .rt-btn-urgent { width: 100%; padding: 11px; background: #D85A30; color: #4A1B0C; border: none; border-radius: 9px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 6px; transition: opacity 0.15s; font-family: inherit; }
+  .rt-btn-urgent:hover { opacity: 0.88; }
+
+  /* Urgent toggle */
+  .rt-urgent-toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 9px; border: 1px solid #E5E2DC; background: #FAFAF8; margin-bottom: 12px; cursor: pointer; transition: all 0.15s; user-select: none; }
+  .rt-urgent-toggle-row.on { background: #FAECE7; border-color: #F0997B; }
+  .rt-urgent-toggle-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #1A1A18; pointer-events: none; }
+  .rt-urgent-toggle-label svg { width: 16px; height: 16px; color: #D85A30; }
+  .rt-toggle-switch { width: 32px; height: 18px; border-radius: 9px; background: #D8D5CD; position: relative; flex-shrink: 0; pointer-events: none; transition: background 0.2s; }
+  .rt-toggle-switch.on { background: #D85A30; }
+  .rt-toggle-knob { width: 14px; height: 14px; border-radius: 50%; background: white; position: absolute; top: 2px; left: 2px; transition: left 0.2s; }
+  .rt-toggle-switch.on .rt-toggle-knob { left: 16px; }
+  .rt-urgent-options { background: #FAECE7; border: 1px solid #F0997B; border-radius: 9px; padding: 12px; margin-bottom: 12px; display: none; }
+  .rt-urgent-options.show { display: block; }
+  .rt-urgent-options label { font-size: 13px; color: #993C1D; margin-bottom: 8px; display: block; font-weight: 500; }
+  .rt-wait-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .rt-wait-chip { padding: 5px 12px; border-radius: 999px; font-size: 12px; border: 1px solid #F0997B; color: #993C1D; cursor: pointer; background: transparent; transition: all 0.15s; font-family: inherit; }
+  .rt-wait-chip.active { background: #D85A30; border-color: #D85A30; color: white; font-weight: 600; }
+
+  /* Prefs */
+  .rt-prefs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+  .rt-pref-btn { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #1A1A18; cursor: pointer; padding: 7px 8px; border: 1px solid #E5E2DC; border-radius: 8px; background: #FAFAF8; transition: all 0.15s; user-select: none; width: 100%; text-align: left; font-family: inherit; }
+  .rt-pref-btn:hover { border-color: #D8D5CD; background: #F2F1ED; }
+  .rt-pref-btn.on { background: #E1F5EE; border-color: #5DCAA5; color: #085041; }
+  .rt-pref-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .rt-pref-check { font-size: 11px; margin-left: auto; opacity: 0; }
+  .rt-pref-btn.on .rt-pref-check { opacity: 1; }
+
+  /* Compare box */
+  .rt-compare-box { background: #FAFAF8; border: 1px solid #E5E2DC; border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
+  .rt-compare-header { font-size: 11px; font-weight: 600; color: #8C8A84; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  .rt-compare-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .rt-compare-row:last-of-type { margin-bottom: 0; }
+  .rt-compare-service { display: flex; align-items: center; gap: 7px; width: 130px; flex-shrink: 0; }
+  .rt-compare-service-name { font-size: 12px; color: #5F5E5A; }
+  .rt-compare-bar-wrap { flex: 1; margin: 0 10px; height: 4px; background: #E5E2DC; border-radius: 2px; overflow: hidden; }
+  .rt-compare-bar { height: 100%; border-radius: 2px; }
+  .rt-compare-right { text-align: right; min-width: 80px; }
+  .rt-compare-price { font-size: 14px; font-weight: 600; }
+  .rt-compare-sub { font-size: 10px; margin-top: 1px; }
+  .rt-compare-divider { border: none; border-top: 1px dashed #E5E2DC; margin: 10px 0; }
+  .rt-compare-disclaimer { font-size: 10px; color: #B5B2AA; margin-top: 8px; line-height: 1.5; }
+  .rt-breakdown-link { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #B5B2AA; cursor: pointer; margin-top: 10px; border: none; background: none; padding: 0; text-decoration: underline; text-underline-offset: 2px; font-family: inherit; }
+  .rt-breakdown-link:hover { color: #5F5E5A; }
+  .rt-breakdown-panel { display: none; margin-top: 10px; border-top: 1px dashed #E5E2DC; padding-top: 10px; }
+  .rt-breakdown-panel.show { display: block; }
+  .rt-breakdown-title { font-size: 11px; font-weight: 600; color: #5F5E5A; margin-bottom: 8px; }
+  .rt-breakdown-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .rt-breakdown-label { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #5F5E5A; }
+  .rt-breakdown-label svg { width: 12px; height: 12px; color: #8C8A84; }
+  .rt-breakdown-val { font-size: 11px; color: #1A1A18; font-weight: 600; }
+  .rt-breakdown-total-row { display: flex; align-items: center; justify-content: space-between; padding-top: 6px; border-top: 1px solid #E5E2DC; margin-top: 4px; }
+  .rt-breakdown-total-label { font-size: 11px; font-weight: 600; color: #1A1A18; }
+  .rt-breakdown-total-val { font-size: 12px; font-weight: 600; color: #1A1A18; }
+  .rt-breakdown-profit-row { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; padding: 6px 8px; border-radius: 8px; }
+  .rt-breakdown-profit-row.good { background: #E1F5EE; }
+  .rt-breakdown-profit-row.warn { background: #FAECE7; }
+  .rt-breakdown-profit-label { font-size: 11px; font-weight: 600; }
+  .rt-breakdown-profit-label.good { color: #085041; }
+  .rt-breakdown-profit-label.warn { color: #993C1D; }
+  .rt-breakdown-profit-val { font-size: 12px; font-weight: 600; }
+  .rt-breakdown-profit-val.good { color: #0F6E56; }
+  .rt-breakdown-profit-val.warn { color: #D85A30; }
+  .rt-breakdown-note { font-size: 10px; color: #B5B2AA; margin-top: 8px; line-height: 1.5; }
+
+  .rt-posted-success { background: #E1F5EE; border: 1px solid #5DCAA5; border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; color: #085041; font-size: 13px; display: none; }
+  .rt-posted-success.show { display: block; }
+
+  /* Driver filters */
+  .rt-filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .rt-filter-chip { padding: 5px 12px; border-radius: 999px; font-size: 12px; border: 1px solid #E5E2DC; color: #5F5E5A; cursor: pointer; background: transparent; transition: all 0.15s; font-family: inherit; }
+  .rt-filter-chip.active { background: #E1F5EE; border-color: #5DCAA5; color: #085041; font-weight: 600; }
+
+  /* Trip cards */
+  .rt-urgent-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; padding: 2px 8px; border-radius: 999px; background: #FAECE7; border: 1px solid #F0997B; color: #993C1D; font-weight: 600; margin-bottom: 8px; }
+  .rt-trip-card { background: #FFFFFF; border: 1px solid #E5E2DC; border-radius: 12px; padding: 16px; margin-bottom: 12px; transition: border-color 0.15s; }
+  .rt-trip-card:hover { border-color: #D8D5CD; }
+  .rt-trip-card.urgent-card { border-color: #F0997B; }
+  .rt-trip-card.selected { border: 1.5px solid #1D9E75; }
+  .rt-trip-route { font-size: 15px; font-weight: 600; color: #1A1A18; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .rt-trip-route svg { color: #1D9E75; width: 16px; height: 16px; flex-shrink: 0; }
+  .rt-trip-meta { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .rt-meta-item { font-size: 12px; color: #5F5E5A; display: flex; align-items: center; gap: 4px; }
+  .rt-meta-item svg { width: 13px; height: 13px; }
+  .rt-pref-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+  .rt-pref-tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #F2F1ED; border: 1px solid #E5E2DC; color: #5F5E5A; }
+  .rt-trip-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid #E5E2DC; }
+  .rt-price-badge { font-size: 18px; font-weight: 700; color: #1A1A18; }
+  .rt-price-sub { font-size: 11px; color: #8C8A84; margin-top: 1px; }
+  .rt-action-row { display: flex; gap: 8px; }
+  .rt-btn-accept { padding: 7px 14px; background: #1D9E75; color: #04342C; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; font-family: inherit; }
+  .rt-btn-accept:hover { opacity: 0.85; }
+  .rt-btn-bid { padding: 7px 14px; background: transparent; color: #1A1A18; border: 1px solid #E5E2DC; border-radius: 8px; font-size: 13px; cursor: pointer; transition: background 0.15s; font-family: inherit; }
+  .rt-btn-bid:hover { background: #F7F6F3; }
+
+  /* Response panel */
+  .rt-response-panel { background: #FAFAF8; border-radius: 10px; padding: 14px; margin-top: 10px; border: 1px solid #E5E2DC; }
+  .rt-response-panel.accept-mode { border-color: #5DCAA5; background: #E1F5EE; }
+  .rt-locked-price { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: white; border: 1px solid #5DCAA5; border-radius: 8px; margin-bottom: 10px; }
+  .rt-locked-price svg { width: 14px; height: 14px; color: #0F6E56; flex-shrink: 0; }
+  .rt-locked-price-label { font-size: 11px; color: #0F6E56; }
+  .rt-locked-price-val { font-size: 16px; font-weight: 700; color: #0F6E56; margin-left: auto; }
+  .rt-bid-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .rt-bid-field-label { font-size: 11px; color: #8C8A84; margin-bottom: 4px; font-weight: 600; }
+  .rt-bid-input-wrap { display: flex; align-items: center; gap: 4px; }
+  .rt-bid-input-wrap span { font-size: 13px; color: #5F5E5A; }
+  .rt-bid-input-wrap input { flex: 1; font-size: 14px; padding: 9px 10px; border: 1px solid #E5E2DC; border-radius: 8px; outline: none; font-family: inherit; }
+  .rt-bid-input-wrap input:focus { border-color: #1D9E75; }
+  .rt-bid-submit-accept { width: 100%; padding: 9px; background: #1D9E75; color: #04342C; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .rt-bid-submit-counter { width: 100%; padding: 9px; background: transparent; color: #1A1A18; border: 1px solid #E5E2DC; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .rt-eta-response { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; padding: 3px 9px; border-radius: 999px; background: #E1F5EE; border: 1px solid #5DCAA5; color: #085041; margin-top: 4px; }
+  .rt-card-breakdown-link { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #B5B2AA; cursor: pointer; border: none; background: none; padding: 0; text-decoration: underline; text-underline-offset: 2px; margin-top: 8px; font-family: inherit; }
+  .rt-card-breakdown-link:hover { color: #5F5E5A; }
+  .rt-card-breakdown { margin-top: 10px; border-top: 1px dashed #E5E2DC; padding-top: 10px; display: none; }
+  .rt-card-breakdown.show { display: block; }
+  .rt-urgent-warn { font-size: 11px; color: #993C1D; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
+  .rt-urgent-warn svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+  .rt-view { display: none; }
+  .rt-view.active { display: block; }
+  .rt-toast { display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #085041; color: #9FE1CB; padding: 11px 20px; border-radius: 10px; font-size: 13px; z-index: 100; white-space: nowrap; }
+  .rt-toast.show { display: block; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: #D8D5CD; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="rt-app">
+  <nav class="rt-nav">
+    <div class="rt-logo">road<span>tripper</span></div>
+    <div class="rt-nav-tabs">
+      <button class="rt-tab active" id="tab-rider" onclick="switchTab('rider')">I need a ride</button>
+      <button class="rt-tab" id="tab-driver" onclick="switchTab('driver')">I'm a driver</button>
+    </div>
+  </nav>
+
+  <div class="rt-body">
+    <div class="rt-sidebar">
+
+      <!-- RIDER SIDEBAR -->
+      <div id="rider-sidebar" class="rt-view active">
+        <div class="rt-section-label">Post a trip</div>
+        <div id="post-success" class="rt-posted-success">
+          <svg style="width:15px;height:15px;vertical-align:-2px;margin-right:6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+          Trip posted! Drivers will see it shortly.
+        </div>
+
+        <div class="rt-urgent-toggle-row" id="urgent-toggle-row" onclick="toggleUrgent()">
+          <div class="rt-urgent-toggle-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            <span>I need a ride <strong>now</strong></span>
+          </div>
+          <div class="rt-toggle-switch" id="urgent-switch"><div class="rt-toggle-knob"></div></div>
+        </div>
+
+        <div class="rt-urgent-options" id="urgent-options">
+          <label>How long can you wait?</label>
+          <div class="rt-wait-chips" id="wait-chips">
+            <button class="rt-wait-chip" onclick="selectWait(this,'15 min')">15 min</button>
+            <button class="rt-wait-chip active" onclick="selectWait(this,'30 min')">30 min</button>
+            <button class="rt-wait-chip" onclick="selectWait(this,'45 min')">45 min</button>
+            <button class="rt-wait-chip" onclick="selectWait(this,'1 hr')">1 hr</button>
+          </div>
+        </div>
+
+        <div class="rt-form-group">
+          <label>Pickup location</label>
+          <input type="text" id="pickup" placeholder="e.g. Miami, FL" oninput="updateEstimate()" />
+        </div>
+        <div class="rt-form-group">
+          <label>Destination</label>
+          <input type="text" id="destination" placeholder="e.g. Orlando, FL" oninput="updateEstimate()" />
+        </div>
+
+        <div id="planned-datetime" class="rt-price-row">
+          <div class="rt-form-group"><label>Date</label><input type="date" id="trip-date" /></div>
+          <div class="rt-form-group"><label>Time</label><input type="time" id="trip-time" /></div>
+        </div>
+
+        <div class="rt-price-row">
+          <div class="rt-form-group">
+            <label>Passengers</label>
+            <select id="passengers"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+          </div>
+          <div class="rt-form-group">
+            <label>Luggage</label>
+            <select id="luggage"><option>None</option><option>1 bag</option><option>2 bags</option><option>3+ bags</option></select>
+          </div>
+        </div>
+        <div class="rt-form-group">
+          <label>Vehicle preference</label>
+          <select id="vehicle-pref">
+            <option value="any">No preference — any vehicle</option>
+            <option value="sedan">Standard sedan (Camry, Accord, Civic…)</option>
+            <option value="midsuv">Midsize SUV (RAV4, Tucson, CR-V…)</option>
+            <option value="largesuv">Full-size SUV / minivan (Tahoe, Sedona, Sienna…)</option>
+            <option value="luxury">Luxury (driver specifies)</option>
+          </select>
+        </div>
+
+        <hr class="rt-divider" />
+        <div class="rt-section-label">Trip preferences</div>
+        <div class="rt-prefs-grid" id="prefs-grid"></div>
+
+        <div class="rt-form-group">
+          <label>Additional notes (optional)</label>
+          <textarea id="trip-notes" placeholder="Anything else drivers should know... e.g. oversized luggage, sports equipment, wheelchair or mobility aid, traveling with a pet, pickup is at a terminal or hotel entrance, flexible on departure time"></textarea>
+        </div>
+
+        <hr class="rt-divider" />
+        <div class="rt-section-label">Your offered price</div>
+        <div class="rt-form-group">
+          <input type="number" id="offered-price" placeholder="Enter amount in $" min="0" oninput="updateEstimate()" />
+        </div>
+
+        <div id="compare-box" style="display:none;" class="rt-compare-box">
+          <div class="rt-compare-header">
+            <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Price comparison
+          </div>
+          <div id="compare-rows"></div>
+          <button class="rt-breakdown-link" onclick="toggleRiderBreakdown()">
+            <svg style="width:11px;height:11px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            <span id="breakdown-link-text">Where does this money go?</span>
+          </button>
+          <div class="rt-breakdown-panel" id="rider-breakdown-panel">
+            <div class="rt-breakdown-title">Estimated driver costs per trip</div>
+            <div id="rider-breakdown-rows"></div>
+            <div class="rt-breakdown-note">* National averages. Return trip costs not included.</div>
+          </div>
+          <div class="rt-compare-disclaimer">* Uber/Lyft estimates use Florida UberX rates (~$1.40/mi + $0.35/min). Typical accepted fare based on $0.95–$1.05/mi. Distances approximated from known Florida city pairs.</div>
+        </div>
+
+        <button class="rt-btn-primary" id="post-btn" onclick="postTrip()">
+          <svg style="width:14px;height:14px;vertical-align:-2px;margin-right:6px;" viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+          Post my trip
+        </button>
+      </div>
+
+      <!-- DRIVER SIDEBAR -->
+      <div id="driver-sidebar" class="rt-view">
+        <div class="rt-section-label">Filter trips</div>
+        <div class="rt-form-group"><label>Departing from</label><input type="text" id="driver-origin" placeholder="e.g. Miami, FL" /></div>
+        <div class="rt-form-group"><label>Available date</label><input type="date" id="driver-date" /></div>
+        <div class="rt-form-group"><label>Minimum fare</label><input type="number" id="min-fare" placeholder="$50" min="0" /></div>
+        <hr class="rt-divider" />
+        <div class="rt-section-label">Quick filters</div>
+        <div class="rt-filter-row">
+          <button class="rt-filter-chip" onclick="toggleChip(this)">Urgent only</button>
+          <button class="rt-filter-chip" onclick="toggleChip(this)">Planned only</button>
+          <button class="rt-filter-chip active" onclick="toggleChip(this)">All open</button>
+          <button class="rt-filter-chip" onclick="toggleChip(this)">$100+</button>
+          <button class="rt-filter-chip" onclick="toggleChip(this)">$200+</button>
+        </div>
+        <button class="rt-btn-primary" onclick="showToast('Showing all open trips in Florida')">
+          <svg style="width:14px;height:14px;vertical-align:-2px;margin-right:6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          Search trips
+        </button>
+      </div>
+
+    </div>
+
+    <div class="rt-main">
+      <div id="rider-main" class="rt-view active">
+        <div class="rt-section-label">Open trips near you</div>
+        <div id="rider-trips-list"></div>
+      </div>
+      <div id="driver-main" class="rt-view">
+        <div class="rt-section-label">Available trips</div>
+        <div id="driver-trips-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="rt-toast"></div>
+
+<script>
+const PREFS = [
+  {value:"No smoking",icon:'<path d="M12 12H3M21 12h-3M9 12V9M15 6l-6 6"/><line x1="3" y1="3" x2="21" y2="21"/>'},
+  {value:"No pets",icon:'<path d="M14.5 10.5c.83-.83 1.5-2 1.5-3.5a4 4 0 0 0-8 0c0 1.5.67 2.67 1.5 3.5"/><path d="M8.5 10.5S5 12 5 16c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4 0-4-3.5-5.5-3.5-5.5"/><line x1="3" y1="3" x2="21" y2="21"/>'},
+  {value:"No food/drinks",icon:'<path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/><line x1="3" y1="3" x2="21" y2="21"/>'},
+  {value:"Quiet ride",icon:'<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>'},
+  {value:"AC required",icon:'<path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 10 16H2m15.73-8.27A2 2 0 1 1 19 12H2"/>'},
+  {value:"Oversized luggage",icon:'<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>'},
+  {value:"Child seat needed",icon:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>'},
+  {value:"Stops OK",icon:'<line x1="3" y1="12" x2="21" y2="12"/><polyline points="8 7 3 12 8 17"/><polyline points="16 7 21 12 16 17"/>'}
+];
+
+const COSTS = [
+  {label:"Gas",ratePerMile:0.18,icon:'<line x1="3" y1="22" x2="3" y2="9"/><path d="M13 22V4a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v18"/><path d="M13 11h5a2 2 0 0 1 2 2v3a1 1 0 0 0 1 1h1"/>'},
+  {label:"Depreciation",ratePerMile:0.08,icon:'<path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><path d="M3 16a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2H3v-2z"/>'},
+  {label:"Maintenance & wear",ratePerMile:0.06,icon:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>'},
+  {label:"Insurance (rideshare)",ratePerMile:0.05,icon:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'},
+  {label:"Platform fee",flat:5,icon:'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'}
+];
+
+const DISTANCES = {
+  "miami-orlando":235,"miami-tampa":280,"miami-jacksonville":340,"miami-gainesville":330,
+  "miami-tallahassee":470,"miami-key west":160,"fort lauderdale-tampa":260,
+  "fort lauderdale-orlando":210,"fort lauderdale-jacksonville":320,"boca raton-key west":190,
+  "boca raton-tampa":240,"doral-gainesville":320,"doral-orlando":230,
+  "orlando-jacksonville":140,"orlando-tampa":85,"tampa-jacksonville":205,
+  "tampa-gainesville":130,"gainesville-jacksonville":75
+};
+
+const selectedPrefs = new Set();
+let isUrgent = false, maxWait = '30 min', activeBid = null, riderBreakdownOpen = false, currentMiles = null;
+
+// Uber rate tiers by vehicle class (Florida, 2025 avg per mile)
+const UBER_RATES = {
+  sedan:    { perMile: 1.40, perMin: 0.35, base: 2.50, label: 'UberX' },
+  midsuv:   { perMile: 1.75, perMin: 0.40, base: 3.00, label: 'UberXL' },
+  largesuv: { perMile: 2.10, perMin: 0.50, base: 4.00, label: 'UberXL' },
+  luxury:   { perMile: 3.50, perMin: 0.65, base: 7.00, label: 'Uber Black' },
+  any:      { perMile: 1.40, perMin: 0.35, base: 2.50, label: 'UberX' }
+};
+
+const VEHICLE_PREF_LABELS = {
+  any: 'No preference', sedan: 'Standard sedan',
+  midsuv: 'Midsize SUV', largesuv: 'Full-size SUV / minivan', luxury: 'Luxury'
+};
+
+function getDistance(from, to) {
+  const f = from.toLowerCase().replace(/,?\s*fl\.?$/i,'').trim();
+  const t = to.toLowerCase().replace(/,?\s*fl\.?$/i,'').trim();
+  return DISTANCES[f+'-'+t] || DISTANCES[t+'-'+f] || null;
+}
+
+function calcFares(miles, vehicleClass) {
+  const mins = (miles/65)*60;
+  const r = UBER_RATES[vehicleClass || 'any'];
+  const uber = Math.round(r.base + r.perMile*miles + r.perMin*mins);
+  const lyft = Math.round(uber * 0.95); // Lyft typically ~5% less
+  const uberDriverPayout = Math.round(uber * 0.65);
+  return {
+    uber, lyft, uberDriverPayout,
+    uberLabel: r.label,
+    typLow: Math.round(miles*0.95),
+    typHigh: Math.round(miles*1.05),
+    miles: Math.round(miles)
+  };
+}
+
+function calcDriverCosts(miles) {
+  let total = 0;
+  const rows = COSTS.map(c => { const amt = c.flat ? c.flat : Math.round(c.ratePerMile*miles*100)/100; total += amt; return {...c, amt}; });
+  return { rows, total: Math.round(total*100)/100 };
+}
+
+function renderBreakdownRows(containerId, miles, price) {
+  const {rows, total} = calcDriverCosts(miles);
+  const profit = price - total;
+  const good = profit > 0;
+  document.getElementById(containerId).innerHTML =
+    rows.map(r => `<div class="rt-breakdown-row">
+      <div class="rt-breakdown-label"><svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${r.icon}</svg>${r.label}</div>
+      <div class="rt-breakdown-val">${r.flat ? '$'+r.flat+' flat' : '$'+r.amt.toFixed(2)+' ($'+r.ratePerMile+'/mi)'}</div>
+    </div>`).join('') +
+    `<div class="rt-breakdown-total-row">
+      <div class="rt-breakdown-total-label">Est. driver costs</div>
+      <div class="rt-breakdown-total-val">$${total.toFixed(2)}</div>
+    </div>
+    <div class="rt-breakdown-profit-row ${good?'good':'warn'}">
+      <div class="rt-breakdown-profit-label ${good?'good':'warn'}">${good?'Est. driver profit':'Below break-even'}</div>
+      <div class="rt-breakdown-profit-val ${good?'good':'warn'}">${good?'+$'+profit.toFixed(2):'-$'+Math.abs(profit).toFixed(2)}</div>
+    </div>`;
+}
+
+function updateEstimate() {
+  const from = document.getElementById('pickup').value;
+  const to = document.getElementById('destination').value;
+  const yourPrice = parseInt(document.getElementById('offered-price').value) || 0;
+  const box = document.getElementById('compare-box');
+  const dist = getDistance(from, to);
+  currentMiles = dist;
+  if (!dist || yourPrice < 1) { box.style.display = 'none'; return; }
+  const f = calcFares(dist);
+  const maxVal = Math.max(f.uber, f.lyft, yourPrice, f.typHigh);
+  const rows = [
+    {label:'Uber estimate',icon:'<path d="M5 11l1.5-4.5h11L18 11"/><path d="M3 16a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2H3v-2z"/>',price:f.uber,sub:f.uber>yourPrice?`$${f.uber-yourPrice} more than your price`:'',subColor:'#8C8A84',barColor:'#D8D5CD'},
+    {label:'Lyft estimate',icon:'<path d="M5 11l1.5-4.5h11L18 11"/><path d="M3 16a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2H3v-2z"/>',price:f.lyft,sub:f.lyft>yourPrice?`$${f.lyft-yourPrice} more than your price`:'',subColor:'#8C8A84',barColor:'#D8D5CD'},
+    {label:'Typical accepted',icon:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>',price:null,range:[f.typLow,f.typHigh],sub:`based on ${f.miles} mi`,subColor:'#5F5E5A',barColor:'#5DCAA5'},
+    {label:'Your price',icon:'<polyline points="20 6 9 17 4 12"/>',price:yourPrice,sub:yourPrice>=f.typLow&&yourPrice<=f.typHigh?'within typical range ✓':yourPrice<f.typLow?`$${f.typLow-yourPrice} below typical`:`$${yourPrice-f.typHigh} above typical`,subColor:yourPrice>=f.typLow&&yourPrice<=f.typHigh?'#0F6E56':yourPrice<f.typLow?'#993C1D':'#0F6E56',barColor:'#1D9E75'}
+  ];
+  document.getElementById('compare-rows').innerHTML = rows.map((r,i) => {
+    const dp = r.price !== null ? r.price : r.range[1];
+    const pct = Math.round((dp/maxVal)*100);
+    const priceStr = r.price !== null ? `$${r.price}` : `$${r.range[0]}–$${r.range[1]}`;
+    const isYours = r.label === 'Your price';
+    return `${i===2?'<div class="rt-compare-divider"></div>':''}
+    <div class="rt-compare-row">
+      <div class="rt-compare-service">
+        <svg style="width:14px;height:14px;color:${isYours?'#1D9E75':'#8C8A84'};" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${r.icon}</svg>
+        <span class="rt-compare-service-name" style="${isYours?'color:#1A1A18;font-weight:600;':''}">${r.label}</span>
+      </div>
+      <div class="rt-compare-bar-wrap"><div class="rt-compare-bar" style="width:${pct}%;background:${r.barColor};"></div></div>
+      <div class="rt-compare-right">
+        <div class="rt-compare-price" style="color:${isYours?'#0F6E56':'#1A1A18'};">${priceStr}</div>
+        ${r.sub?`<div class="rt-compare-sub" style="color:${r.subColor};">${r.sub}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  if (riderBreakdownOpen) renderBreakdownRows('rider-breakdown-rows', dist, yourPrice);
+  box.style.display = 'block';
+}
+
+function toggleRiderBreakdown() {
+  riderBreakdownOpen = !riderBreakdownOpen;
+  document.getElementById('rider-breakdown-panel').classList.toggle('show', riderBreakdownOpen);
+  document.getElementById('breakdown-link-text').textContent = riderBreakdownOpen ? 'Hide breakdown' : 'Where does this money go?';
+  if (riderBreakdownOpen && currentMiles) renderBreakdownRows('rider-breakdown-rows', currentMiles, parseInt(document.getElementById('offered-price').value)||0);
+}
+
+function toggleCardBreakdown(id, miles, price) {
+  const panel = document.getElementById('card-bd-'+id);
+  const link = document.getElementById('card-bd-link-'+id);
+  const isOpen = panel.classList.toggle('show');
+  link.textContent = isOpen ? 'Hide breakdown' : 'See cost breakdown';
+  if (isOpen) renderBreakdownRows('card-bd-rows-'+id, miles, price);
+}
+
+const sampleTrips = [
+  {id:1,pickup:"Miami, FL",destination:"Orlando, FL",date:"Jun 18",time:"7:00 AM",passengers:2,luggage:"2 bags",vehiclePref:"sedan",price:140,prefs:["No smoking","AC required"],notes:"Early morning preferred.",rider:"Carlos M.",posted:"2h ago",urgent:false,maxWait:null,driverVehicle:"2023 Hyundai Sonata",driverVehicleClass:"sedan"},
+  {id:2,pickup:"Fort Lauderdale, FL",destination:"Tampa, FL",date:"Jun 19",time:"9:30 AM",passengers:1,luggage:"1 bag",vehiclePref:"any",price:110,prefs:["Quiet ride"],notes:"",rider:"Priya S.",posted:"4h ago",urgent:false,maxWait:null,driverVehicle:"2022 Toyota Camry",driverVehicleClass:"sedan"},
+  {id:3,pickup:"Miami, FL",destination:"Jacksonville, FL",date:"Jun 20",time:"6:00 AM",passengers:3,luggage:"3+ bags",vehiclePref:"largesuv",price:230,prefs:["Stops OK","Oversized luggage"],notes:"Family trip, need extra trunk space.",rider:"David R.",posted:"5h ago",urgent:false,maxWait:null,driverVehicle:"2021 Kia Sedona",driverVehicleClass:"largesuv"},
+  {id:4,pickup:"Doral, FL",destination:"Orlando, FL",date:"Today",time:"Now",passengers:1,luggage:"1 bag",vehiclePref:"any",price:160,prefs:["AC required"],notes:"Flight connection, need to leave ASAP.",rider:"James T.",posted:"8m ago",urgent:true,maxWait:"30 min",driverVehicle:"2023 Honda Accord",driverVehicleClass:"sedan"},
+  {id:5,pickup:"Boca Raton, FL",destination:"Key West, FL",date:"Jun 22",time:"8:00 AM",passengers:2,luggage:"2 bags",vehiclePref:"midsuv",price:175,prefs:["No smoking","No pets"],notes:"Headed to a wedding.",rider:"Monica L.",posted:"1h ago",urgent:false,maxWait:null,driverVehicle:"2022 Toyota RAV4",driverVehicleClass:"midsuv"}
+];
+
+function renderTrips(containerId, showBid) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = sampleTrips.map(t => {
+    const dist = getDistance(t.pickup, t.destination);
+    const vehicleClass = t.vehiclePref || 'any';
+    const fares = dist ? calcFares(dist, vehicleClass) : null;
+
+    // Rider card footer
+    let footerSub = "rider's offered price", footerSubColor = '#8C8A84';
+
+    // Driver card footer — Uber payout comparison
+    let driverFooterSub = '', driverFooterColor = '#8C8A84';
+    if (fares && showBid) {
+      const advantage = t.price - fares.uberDriverPayout;
+      if (advantage > 0) {
+        driverFooterSub = `Est. $${advantage} more than ${fares.uberLabel} driver payout`;
+        driverFooterColor = '#0F6E56';
+      } else {
+        driverFooterSub = `Similar to ${fares.uberLabel} driver payout`;
+        driverFooterColor = '#8C8A84';
+      }
+    }
+
+    const prefLabel = VEHICLE_PREF_LABELS[t.vehiclePref] || 'No preference';
+    const showVehiclePref = t.vehiclePref && t.vehiclePref !== 'any';
+
+    return `<div class="${t.urgent?'rt-trip-card urgent-card':'rt-trip-card'}" id="card-${t.id}">
+      ${t.urgent?`<div class="rt-urgent-badge"><svg style="width:11px;height:11px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Urgent · max wait ${t.maxWait}</div>`:''}
+      <div class="rt-trip-route">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        ${t.pickup}
+        <svg style="width:12px;height:12px;color:#8C8A84;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        ${t.destination}
+      </div>
+      <div class="rt-trip-meta">
+        <span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${t.date}${t.time!=='Now'?' · '+t.time:''}</span>
+        <span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>${t.passengers} pax</span>
+        <span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>${t.luggage}</span>
+        ${showVehiclePref?`<span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><path d="M3 16a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2H3v-2z"/><circle cx="7" cy="17.5" r="1.2"/><circle cx="17" cy="17.5" r="1.2"/></svg>${prefLabel}</span>`:''}
+        <span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${t.posted}</span>
+      </div>
+      ${showBid&&t.driverVehicle?`<div style="font-size:12px;color:#5F5E5A;margin-bottom:8px;display:flex;align-items:center;gap:5px;"><svg style="width:13px;height:13px;color:#1D9E75;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><path d="M3 16a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2H3v-2z"/><circle cx="7" cy="17.5" r="1.2"/><circle cx="17" cy="17.5" r="1.2"/></svg>${t.driverVehicle}</div>`:''}
+      ${t.prefs.length?`<div class="rt-pref-tags">${t.prefs.map(p=>`<span class="rt-pref-tag">${p}</span>`).join('')}</div>`:''}
+      ${t.notes?`<div style="font-size:12px;color:#5F5E5A;margin-bottom:8px;font-style:italic;">"${t.notes}"</div>`:''}
+      <div class="rt-trip-footer">
+        <div>
+          <div class="rt-price-badge">$${t.price}</div>
+          ${showBid
+            ? `<div class="rt-price-sub" style="color:${driverFooterColor};">${driverFooterSub}</div>
+               ${fares?`<div style="font-size:10px;color:#B5B2AA;margin-top:2px;">Uber rider fare est: $${fares.uber} · Driver payout est: $${fares.uberDriverPayout}</div>`:''}`
+            : `<div class="rt-price-sub" style="color:${footerSubColor};">rider's offered price</div>`
+          }
+        </div>
+        <div class="rt-action-row">
+          ${showBid
+            ? `<button class="rt-btn-bid" onclick="openResponse(${t.id},${t.price},${t.urgent},'bid','${t.driverVehicle||''}')">Counter bid</button>
+               <button class="rt-btn-accept" onclick="openResponse(${t.id},${t.price},${t.urgent},'accept','${t.driverVehicle||''}')">Accept $${t.price}</button>`
+            : `<span style="font-size:11px;padding:3px 9px;border-radius:999px;background:#E1F5EE;color:#085041;border:1px solid #5DCAA5;">${t.rider}</span>`
+          }
+        </div>
+      </div>
+      ${showBid&&dist?`<button class="rt-card-breakdown-link" id="card-bd-link-${t.id}" onclick="toggleCardBreakdown(${t.id},${dist},${t.price})">
+        <svg style="width:11px;height:11px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        See cost breakdown</button>
+        <div class="rt-card-breakdown" id="card-bd-${t.id}"><div class="rt-breakdown-title">Estimated driver costs for this trip</div><div id="card-bd-rows-${t.id}"></div><div class="rt-breakdown-note">* National averages. Return trip costs not included.</div></div>`:``}
+      ${showBid?`<div id="resp-panel-${t.id}" style="display:none;" class="rt-response-panel"><div id="resp-panel-inner-${t.id}"></div></div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function buildPrefs() {
+  document.getElementById('prefs-grid').innerHTML = PREFS.map(p => `
+    <button type="button" class="rt-pref-btn" data-pref="${p.value}" onclick="togglePref(this)">
+      <svg style="width:15px;height:15px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${p.icon}</svg>
+      <span>${p.value}</span>
+      <span class="rt-pref-check">✓</span>
+    </button>`).join('');
+}
+
+function togglePref(btn) {
+  const val = btn.dataset.pref;
+  selectedPrefs.has(val) ? selectedPrefs.delete(val) : selectedPrefs.add(val);
+  btn.classList.toggle('on');
+}
+
+function toggleUrgent() {
+  isUrgent = !isUrgent;
+  document.getElementById('urgent-switch').classList.toggle('on', isUrgent);
+  document.getElementById('urgent-toggle-row').classList.toggle('on', isUrgent);
+  document.getElementById('urgent-options').classList.toggle('show', isUrgent);
+  document.getElementById('planned-datetime').style.display = isUrgent ? 'none' : 'grid';
+  const btn = document.getElementById('post-btn');
+  btn.className = isUrgent ? 'rt-btn-urgent' : 'rt-btn-primary';
+  btn.innerHTML = isUrgent
+    ? '<svg style="width:14px;height:14px;vertical-align:-2px;margin-right:6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Post urgent ride'
+    : '<svg style="width:14px;height:14px;vertical-align:-2px;margin-right:6px;" viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>Post my trip';
+}
+
+function selectWait(el, val) {
+  maxWait = val;
+  document.querySelectorAll('#wait-chips .rt-wait-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function postTrip() {
+  const pickup = document.getElementById('pickup').value.trim();
+  const dest = document.getElementById('destination').value.trim();
+  const price = document.getElementById('offered-price').value;
+  if (!pickup || !dest || !price) { showToast('Fill in pickup, destination, and your price.'); return; }
+  const newTrip = {
+    id: sampleTrips.length+1, pickup, destination: dest,
+    date: isUrgent ? 'Today' : (document.getElementById('trip-date').value||'TBD'),
+    time: isUrgent ? 'Now' : (document.getElementById('trip-time').value||'TBD'),
+    passengers: document.getElementById('passengers').value,
+    luggage: document.getElementById('luggage').value,
+    vehiclePref: document.getElementById('vehicle-pref').value,
+    price: parseInt(price), prefs: [...selectedPrefs],
+    notes: document.getElementById('trip-notes').value,
+    rider: 'You', posted: 'just now', urgent: isUrgent, maxWait: isUrgent ? maxWait : null
+  };
+  sampleTrips.unshift(newTrip);
+  renderTrips('rider-trips-list', false);
+  renderTrips('driver-trips-list', true);
+  document.getElementById('post-success').classList.add('show');
+  document.getElementById('pickup').value = '';
+  document.getElementById('destination').value = '';
+  document.getElementById('offered-price').value = '';
+  document.getElementById('trip-notes').value = '';
+  document.getElementById('compare-box').style.display = 'none';
+  selectedPrefs.clear();
+  document.querySelectorAll('.rt-pref-btn').forEach(b => b.classList.remove('on'));
+  if (isUrgent) toggleUrgent();
+}
+
+function openResponse(id, price, urgent, mode, vehicle) {
+  if (activeBid && activeBid !== id) { const prev = document.getElementById('resp-panel-'+activeBid); if (prev) prev.style.display = 'none'; }
+  const panel = document.getElementById('resp-panel-'+id);
+  const inner = document.getElementById('resp-panel-inner-'+id);
+  const isSame = panel.dataset.mode === mode && panel.style.display === 'block';
+  if (isSame) { panel.style.display = 'none'; activeBid = null; return; }
+  panel.dataset.mode = mode; activeBid = id;
+  const urgentWarn = urgent ? `<div class="rt-urgent-warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Rider's max wait. Only respond if you can meet this.</div>` : '';
+  const vehicleTag = vehicle ? `<div style="font-size:11px;color:#0F6E56;display:flex;align-items:center;gap:5px;margin-bottom:10px;"><svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><path d="M3 16a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2H3v-2z"/><circle cx="7" cy="17.5" r="1.2"/><circle cx="17" cy="17.5" r="1.2"/></svg>Your vehicle: ${vehicle}</div>` : '';
+  if (mode === 'accept') {
+    panel.classList.add('accept-mode');
+    inner.innerHTML = `<div style="font-size:13px;font-weight:600;color:#085041;margin-bottom:10px;display:flex;align-items:center;gap:6px;"><svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Accepting this trip</div>
+      ${vehicleTag}
+      <div class="rt-locked-price">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <div><div class="rt-locked-price-label">Price locked at rider's offer</div></div>
+        <div class="rt-locked-price-val">$${price}</div>
+      </div>
+      ${urgentWarn}
+      <div class="rt-bid-field-label" style="margin-bottom:4px;">Your ETA <span style="color:#D85A30;">*required</span></div>
+      <div class="rt-bid-input-wrap" style="margin-bottom:10px;"><input type="text" id="eta-input-${id}" placeholder="e.g. 15 min" style="width:100%;font-size:14px;padding:9px 10px;border:1px solid #E5E2DC;border-radius:8px;outline:none;" /></div>
+      <button class="rt-bid-submit-accept" onclick="submitResponse(${id},${price},'accept')">
+        <svg style="width:13px;height:13px;vertical-align:-2px;margin-right:4px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Confirm acceptance</button>`;
+  } else {
+    panel.classList.remove('accept-mode');
+    inner.innerHTML = `<div style="font-size:13px;font-weight:600;color:#1A1A18;margin-bottom:10px;">Submit a counter bid</div>
+      ${vehicleTag}
+      <div class="rt-bid-fields">
+        <div><div class="rt-bid-field-label">Your price</div><div class="rt-bid-input-wrap"><span>$</span><input type="number" id="bid-input-${id}" placeholder="${price}" min="1" /></div></div>
+        <div><div class="rt-bid-field-label">Your ETA <span style="color:#D85A30;">*required</span></div><div class="rt-bid-input-wrap"><input type="text" id="eta-input-${id}" placeholder="e.g. 20 min" /></div></div>
+      </div>
+      ${urgentWarn}
+      <button class="rt-bid-submit-counter" onclick="submitResponse(${id},null,'bid')">Send counter bid</button>`;
+  }
+  panel.style.display = 'block';
+}
+
+function submitResponse(id, lockedPrice, mode) {
+  const eta = document.getElementById('eta-input-'+id).value.trim();
+  if (!eta) { showToast('ETA is required so the rider can decide.'); return; }
+  const price = mode === 'accept' ? lockedPrice : (document.getElementById('bid-input-'+id) ? document.getElementById('bid-input-'+id).value : lockedPrice);
+  document.getElementById('resp-panel-'+id).style.display = 'none';
+  activeBid = null;
+  showToast(mode === 'accept' ? `Trip accepted at $${price} · ETA ${eta}. Rider notified.` : `Counter bid of $${price} · ETA ${eta} sent to rider.`);
+  const footer = document.querySelector(`#card-${id} .rt-trip-footer > div`);
+  if (footer) {
+    const ex = footer.querySelector('.rt-eta-response'); if (ex) ex.remove();
+    const tag = document.createElement('div'); tag.className = 'rt-eta-response';
+    tag.innerHTML = `<svg style="width:11px;height:11px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${mode==='accept'?'Accepted':'Counter bid'}: $${price} · ETA ${eta}`;
+    footer.appendChild(tag);
+  }
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.rt-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.rt-view').forEach(v => v.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById(tab+'-sidebar').classList.add('active');
+  document.getElementById(tab+'-main').classList.add('active');
+}
+
+function toggleChip(el) { el.classList.toggle('active'); }
+function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3200); }
+
+buildPrefs();
+renderTrips('rider-trips-list', false);
+renderTrips('driver-trips-list', true);
+</script>
+</body>
+</html>

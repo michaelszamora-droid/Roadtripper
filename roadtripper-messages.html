@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roadtripper — Messages</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #F7F6F3;
+    color: #1A1A18;
+    padding: 24px 16px;
+  }
+  .rt-app {
+    max-width: 560px;
+    margin: 0 auto;
+    background: #FFFFFF;
+    border-radius: 16px;
+    border: 1px solid #E5E2DC;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 720px;
+  }
+  .rt-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #E5E2DC;
+    flex-shrink: 0;
+  }
+  .rt-logo { font-size: 18px; font-weight: 600; color: #1A1A18; letter-spacing: -0.3px; }
+  .rt-logo span { color: #1D9E75; }
+  .rt-nav-tabs { display: flex; gap: 4px; }
+  .rt-tab {
+    padding: 7px 14px; border-radius: 8px; font-size: 13px; cursor: pointer;
+    border: 1px solid transparent; color: #5F5E5A; background: transparent;
+    transition: all 0.15s; font-family: inherit;
+  }
+  .rt-tab.active { background: #F2F1ED; border-color: #E5E2DC; color: #1A1A18; font-weight: 600; }
+  .rt-tab:hover:not(.active) { background: #F7F6F3; }
+
+  .rt-chat-header {
+    display: flex; align-items: center; gap: 12px; padding: 14px 20px;
+    border-bottom: 1px solid #E5E2DC; flex-shrink: 0;
+  }
+  .rt-chat-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, #1D9E75, #5DCAA5);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 600; color: white; flex-shrink: 0;
+  }
+  .rt-chat-avatar.rider { background: linear-gradient(135deg, #5B8FD9, #8AB4E8); }
+  .rt-chat-header-info { flex: 1; min-width: 0; }
+  .rt-chat-name { font-size: 14px; font-weight: 600; color: #1A1A18; }
+  .rt-chat-sub { font-size: 11px; color: #8C8A84; margin-top: 1px; }
+  .rt-chat-trip-pill {
+    font-size: 11px; padding: 4px 10px; border-radius: 999px; background: #E1F5EE;
+    border: 1px solid #5DCAA5; color: #085041; font-weight: 600; white-space: nowrap; flex-shrink: 0;
+  }
+  .rt-menu-btn {
+    width: 32px; height: 32px; border-radius: 50%; border: none; background: transparent;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
+    transition: background 0.15s; position: relative;
+  }
+  .rt-menu-btn:hover { background: #F2F1ED; }
+  .rt-menu-btn svg { width: 18px; height: 18px; color: #5F5E5A; }
+  .rt-menu-dropdown {
+    display: none; position: absolute; top: 38px; right: 0; background: white;
+    border: 1px solid #E5E2DC; border-radius: 10px; padding: 6px; min-width: 180px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08); z-index: 40;
+  }
+  .rt-menu-dropdown.show { display: block; }
+  .rt-menu-item {
+    display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 7px;
+    font-size: 13px; color: #1A1A18; cursor: pointer; background: none; border: none;
+    width: 100%; text-align: left; font-family: inherit; transition: background 0.15s;
+  }
+  .rt-menu-item:hover { background: #F7F6F3; }
+  .rt-menu-item svg { width: 15px; height: 15px; color: #5F5E5A; flex-shrink: 0; }
+  .rt-menu-item.danger { color: #B5483B; }
+  .rt-menu-item.danger svg { color: #B5483B; }
+  .rt-menu-divider { height: 1px; background: #E5E2DC; margin: 4px 6px; }
+
+  .rt-report-modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(26,26,24,0.5);
+    align-items: center; justify-content: center; padding: 20px; z-index: 60;
+  }
+  .rt-report-modal-overlay.show { display: flex; }
+  .rt-report-modal { background: white; border-radius: 14px; padding: 22px; max-width: 380px; width: 100%; }
+  .rt-report-modal-title { font-size: 15px; font-weight: 600; color: #1A1A18; margin-bottom: 6px; }
+  .rt-report-modal-text { font-size: 12.5px; color: #5F5E5A; line-height: 1.5; margin-bottom: 16px; }
+  .rt-report-reason {
+    display: block; padding: 10px 12px; border-radius: 9px; border: 1px solid #E5E2DC;
+    font-size: 13px; color: #1A1A18; margin-bottom: 8px; cursor: pointer; transition: all 0.15s;
+  }
+  .rt-report-reason:hover { background: #FAFAF8; border-color: #D8D5CD; }
+  .rt-report-reason.selected { background: #FAECE7; border-color: #D85A30; color: #993C1D; font-weight: 600; }
+  .rt-report-modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .rt-also-block-row {
+    display: flex; align-items: flex-start; gap: 9px; padding: 10px 12px; border-radius: 9px;
+    background: #FAFAF8; border: 1px solid #E5E2DC; font-size: 12.5px; color: #5F5E5A;
+    cursor: pointer; margin-top: 10px; line-height: 1.4;
+  }
+  .rt-also-block-row input { margin-top: 1px; flex-shrink: 0; cursor: pointer; }
+
+  .rt-disclosure-banner {
+    display: flex; align-items: flex-start; gap: 8px; padding: 10px 16px;
+    background: #FAF7EF; border-bottom: 1px solid #E5E2DC; flex-shrink: 0;
+  }
+  .rt-disclosure-banner svg.warn-icon { width: 14px; height: 14px; color: #B08A2E; flex-shrink: 0; margin-top: 1px; }
+  .rt-disclosure-text { font-size: 11px; color: #7A6420; line-height: 1.5; flex: 1; }
+  .rt-disclosure-dismiss {
+    font-size: 10px; color: #8C8A84; text-decoration: underline; text-underline-offset: 2px;
+    cursor: pointer; white-space: nowrap; margin-top: 1px; background: none; border: none; font-family: inherit;
+  }
+  .rt-disclosure-dismiss:hover { color: #5F5E5A; }
+
+  .rt-contact-modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(26,26,24,0.5);
+    align-items: center; justify-content: center; padding: 20px; z-index: 60;
+  }
+  .rt-contact-modal-overlay.show { display: flex; }
+  .rt-contact-modal {
+    background: white; border-radius: 14px; padding: 22px; max-width: 380px; width: 100%;
+  }
+  .rt-contact-modal-icon {
+    width: 38px; height: 38px; border-radius: 50%; background: #FAECE7;
+    display: flex; align-items: center; justify-content: center; margin-bottom: 12px;
+  }
+  .rt-contact-modal-icon svg { width: 19px; height: 19px; color: #D85A30; }
+  .rt-contact-modal-title { font-size: 15px; font-weight: 600; color: #1A1A18; margin-bottom: 10px; }
+  .rt-contact-modal-list { margin-bottom: 18px; }
+  .rt-contact-modal-point { display: flex; gap: 8px; font-size: 12.5px; color: #5F5E5A; line-height: 1.5; margin-bottom: 8px; }
+  .rt-contact-modal-point:last-child { margin-bottom: 0; }
+  .rt-contact-modal-point-num {
+    width: 16px; height: 16px; border-radius: 50%; background: #F2F1ED; color: #5F5E5A;
+    display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .rt-contact-modal-actions { display: flex; gap: 10px; }
+  .rt-btn-secondary {
+    flex: 1; padding: 11px; border-radius: 10px; background: #F2F1ED; color: #1A1A18;
+    border: none; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .rt-btn-proceed {
+    flex: 1; padding: 11px; border-radius: 10px; background: #1D9E75; color: #04342C;
+    border: none; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+
+  .rt-messages-area {
+    flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .rt-msg-row { display: flex; flex-direction: column; max-width: 78%; }
+  .rt-msg-row.them { align-self: flex-start; align-items: flex-start; }
+  .rt-msg-row.me { align-self: flex-end; align-items: flex-end; }
+  .rt-msg-bubble {
+    padding: 9px 13px; border-radius: 14px; font-size: 13.5px; line-height: 1.45;
+  }
+  .rt-msg-row.them .rt-msg-bubble { background: #F2F1ED; color: #1A1A18; border-bottom-left-radius: 4px; }
+  .rt-msg-row.me .rt-msg-bubble { background: #1D9E75; color: #04342C; border-bottom-right-radius: 4px; }
+  .rt-msg-time { font-size: 10px; color: #B5B2AA; margin-top: 3px; padding: 0 4px; display: flex; align-items: center; gap: 4px; }
+  .rt-read-receipt { display: inline-flex; align-items: center; }
+  .rt-read-receipt svg { width: 13px; height: 13px; }
+  .rt-read-receipt.sent svg { color: #B5B2AA; }
+  .rt-read-receipt.read svg { color: #1D9E75; }
+
+  .rt-typing-row { display: flex; flex-direction: column; max-width: 78%; align-self: flex-start; align-items: flex-start; }
+  .rt-typing-bubble {
+    background: #F2F1ED; border-radius: 14px; border-bottom-left-radius: 4px;
+    padding: 11px 14px; display: flex; gap: 4px; align-items: center;
+  }
+  .rt-typing-dot { width: 6px; height: 6px; border-radius: 50%; background: #B5B2AA; animation: rt-typing-bounce 1.2s infinite; }
+  .rt-typing-dot:nth-child(2) { animation-delay: 0.15s; }
+  .rt-typing-dot:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes rt-typing-bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+    30% { transform: translateY(-4px); opacity: 1; }
+  }
+
+  .rt-quick-replies {
+    display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 20px; border-top: 1px solid #E5E2DC; flex-shrink: 0;
+  }
+  .rt-quick-reply {
+    font-size: 12px; padding: 6px 12px; border-radius: 999px; background: #FAFAF8;
+    border: 1px solid #E5E2DC; color: #5F5E5A; cursor: pointer; transition: all 0.15s; font-family: inherit;
+  }
+  .rt-quick-reply:hover { background: #F2F1ED; border-color: #D8D5CD; }
+
+  .rt-input-row {
+    display: flex; align-items: center; gap: 10px; padding: 14px 20px;
+    border-top: 1px solid #E5E2DC; flex-shrink: 0;
+  }
+  .rt-input-row input {
+    flex: 1; font-size: 14px; padding: 10px 14px; border-radius: 999px;
+    border: 1px solid #E5E2DC; outline: none; font-family: inherit; background: #FAFAF8;
+  }
+  .rt-input-row input:focus { border-color: #1D9E75; }
+  .rt-send-btn {
+    width: 38px; height: 38px; border-radius: 50%; background: #1D9E75; border: none;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
+    transition: opacity 0.15s;
+  }
+  .rt-send-btn:hover { opacity: 0.88; }
+  .rt-send-btn svg { width: 16px; height: 16px; color: #04342C; }
+
+  .rt-toast {
+    display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #085041; color: #9FE1CB; padding: 11px 20px; border-radius: 10px;
+    font-size: 13px; z-index: 100; white-space: nowrap;
+  }
+  .rt-toast.show { display: block; }
+  .rt-retention-note {
+    text-align: center; font-size: 10px; color: #B5B2AA; padding: 6px 20px 0;
+    transition: opacity 0.4s, max-height 0.4s; overflow: hidden;
+  }
+  .rt-retention-note.hidden { opacity: 0; max-height: 0; padding: 0 20px; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: #D8D5CD; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="rt-app">
+  <nav class="rt-nav">
+    <div class="rt-logo">road<span>tripper</span></div>
+    <div class="rt-nav-tabs">
+      <button class="rt-tab active" id="tab-rider" onclick="switchView('rider')">Rider view</button>
+      <button class="rt-tab" id="tab-driver" onclick="switchView('driver')">Driver view</button>
+    </div>
+  </nav>
+
+  <!-- RIDER VIEW -->
+  <div id="rider-view" class="rt-view" style="display:flex; flex-direction:column; flex:1; min-height:0;">
+    <div class="rt-chat-header">
+      <div class="rt-chat-avatar">RM</div>
+      <div class="rt-chat-header-info">
+        <div class="rt-chat-name">Rafael M.</div>
+        <div class="rt-chat-sub">Usually replies within a few minutes</div>
+      </div>
+      <div class="rt-chat-trip-pill">Doral → Orlando</div>
+      <div style="position:relative;">
+        <button class="rt-menu-btn" onclick="toggleMenu('rider')">
+          <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+        </button>
+        <div class="rt-menu-dropdown" id="rider-menu">
+          <button class="rt-menu-item" onclick="openReport('rider', 'Rafael')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            Report Rafael
+          </button>
+          <div class="rt-menu-divider"></div>
+          <button class="rt-menu-item danger" onclick="openBlockConfirm('rider', 'Rafael')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M4.9 4.9l14.2 14.2"/></svg>
+            Block Rafael
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="rt-disclosure-banner" id="rider-disclosure">
+      <svg class="warn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <div class="rt-disclosure-text">Roadtripper is a connection platform, not a dispatch service. Coordinate pickup details directly here. We don't monitor or guarantee responses.</div>
+      <button class="rt-disclosure-dismiss" onclick="dismissDisclosure('rider')">Don't show again</button>
+    </div>
+
+    <div class="rt-messages-area" id="rider-messages">
+      <div class="rt-msg-row them">
+        <div class="rt-msg-bubble">Hey! Just accepted your trip request for Jun 18. I'll be there at 7:00 AM sharp.</div>
+        <div class="rt-msg-time">9:42 AM</div>
+      </div>
+      <div class="rt-msg-row me">
+        <div class="rt-msg-bubble">Awesome, thank you! I'll be waiting by the front entrance.</div>
+        <div class="rt-msg-time">9:44 AM <span class="rt-read-receipt read"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l3 3 9-9M11 16l1 1 9-9"/></svg></span></div>
+      </div>
+      <div class="rt-msg-row them">
+        <div class="rt-msg-bubble">Sounds good. I'm driving a black Hyundai Sonata, plate ends in 47R. Let me know if anything changes.</div>
+        <div class="rt-msg-time">9:45 AM</div>
+      </div>
+    </div>
+
+    <div class="rt-retention-note" id="rider-retention-note">Messages are kept for 12 months after your trip for safety and support purposes.</div>
+
+    <div class="rt-quick-replies">
+      <button class="rt-quick-reply" onclick="quickSend('rider', 'Running about 5 minutes late')">Running late</button>
+      <button class="rt-quick-reply" onclick="quickSend('rider', 'I have an extra bag, is that okay?')">Extra bag question</button>
+      <button class="rt-quick-reply" onclick="quickSend('rider', 'Can you confirm the pickup spot?')">Confirm pickup spot</button>
+    </div>
+
+    <div class="rt-input-row">
+      <input type="text" id="rider-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendMessage('rider')" />
+      <button class="rt-send-btn" onclick="sendMessage('rider')">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- DRIVER VIEW -->
+  <div id="driver-view" class="rt-view" style="display:none; flex-direction:column; flex:1; min-height:0;">
+    <div class="rt-chat-header">
+      <div class="rt-chat-avatar rider">CM</div>
+      <div class="rt-chat-header-info">
+        <div class="rt-chat-name">Carlos M.</div>
+        <div class="rt-chat-sub">Usually replies within a few minutes</div>
+      </div>
+      <div class="rt-chat-trip-pill">Doral → Orlando</div>
+      <div style="position:relative;">
+        <button class="rt-menu-btn" onclick="toggleMenu('driver')">
+          <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+        </button>
+        <div class="rt-menu-dropdown" id="driver-menu">
+          <button class="rt-menu-item" onclick="openReport('driver', 'Carlos')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            Report Carlos
+          </button>
+          <div class="rt-menu-divider"></div>
+          <button class="rt-menu-item danger" onclick="openBlockConfirm('driver', 'Carlos')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M4.9 4.9l14.2 14.2"/></svg>
+            Block Carlos
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="rt-disclosure-banner" id="driver-disclosure">
+      <svg class="warn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <div class="rt-disclosure-text">Roadtripper is a connection platform, not a dispatch service. Coordinate pickup details directly here. We don't monitor or guarantee responses.</div>
+      <button class="rt-disclosure-dismiss" onclick="dismissDisclosure('driver')">Don't show again</button>
+    </div>
+
+    <div class="rt-messages-area" id="driver-messages">
+      <div class="rt-msg-row me">
+        <div class="rt-msg-bubble">Hey! Just accepted your trip request for Jun 18. I'll be there at 7:00 AM sharp.</div>
+        <div class="rt-msg-time">9:42 AM <span class="rt-read-receipt read"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l3 3 9-9M11 16l1 1 9-9"/></svg></span></div>
+      </div>
+      <div class="rt-msg-row them">
+        <div class="rt-msg-bubble">Awesome, thank you! I'll be waiting by the front entrance.</div>
+        <div class="rt-msg-time">9:44 AM</div>
+      </div>
+      <div class="rt-msg-row me">
+        <div class="rt-msg-bubble">Sounds good. I'm driving a black Hyundai Sonata, plate ends in 47R. Let me know if anything changes.</div>
+        <div class="rt-msg-time">9:45 AM <span class="rt-read-receipt read"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l3 3 9-9M11 16l1 1 9-9"/></svg></span></div>
+      </div>
+    </div>
+
+    <div class="rt-retention-note" id="driver-retention-note">Messages are kept for 12 months after your trip for safety and support purposes.</div>
+
+    <div class="rt-quick-replies">
+      <button class="rt-quick-reply" onclick="quickSend('driver', 'On my way, running on schedule')">On schedule</button>
+      <button class="rt-quick-reply" onclick="quickSend('driver', 'Running about 5 minutes late')">Running late</button>
+      <button class="rt-quick-reply" onclick="quickSend('driver', 'I\'ve arrived at the pickup spot')">Arrived</button>
+    </div>
+
+    <div class="rt-input-row">
+      <input type="text" id="driver-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendMessage('driver')" />
+      <button class="rt-send-btn" onclick="sendMessage('driver')">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<div class="rt-contact-modal-overlay" id="contact-overlay">
+  <div class="rt-contact-modal">
+    <div class="rt-contact-modal-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+    </div>
+    <div class="rt-contact-modal-title">Sharing contact info?</div>
+    <div class="rt-contact-modal-list">
+      <div class="rt-contact-modal-point">
+        <div class="rt-contact-modal-point-num">1</div>
+        <div>Roadtripper isn't responsible for communication that happens outside the app.</div>
+      </div>
+      <div class="rt-contact-modal-point">
+        <div class="rt-contact-modal-point-num">2</div>
+        <div>We recommend keeping trip coordination inside this chat whenever possible.</div>
+      </div>
+      <div class="rt-contact-modal-point">
+        <div class="rt-contact-modal-point-num">3</div>
+        <div>Never share home addresses, financial details, or meet outside agreed pickup locations.</div>
+      </div>
+    </div>
+    <div class="rt-contact-modal-actions">
+      <button class="rt-btn-secondary" onclick="cancelContactShare()">Edit message</button>
+      <button class="rt-btn-proceed" onclick="confirmContactShare()">Send anyway</button>
+    </div>
+  </div>
+</div>
+
+<div class="rt-report-modal-overlay" id="report-overlay">
+  <div class="rt-report-modal">
+    <div class="rt-report-modal-title">Report <span id="report-name">this user</span></div>
+    <div class="rt-report-modal-text">Your report is reviewed by our team. The other person won't be notified that you reported them.</div>
+    <div id="report-reasons">
+      <button class="rt-report-reason" onclick="selectReason(this)">Unsafe driving or behavior</button>
+      <button class="rt-report-reason" onclick="selectReason(this)">Inappropriate messages</button>
+      <button class="rt-report-reason" onclick="selectReason(this)">Didn't show up / no-show</button>
+      <button class="rt-report-reason" onclick="selectReason(this)">Vehicle didn't match listing</button>
+      <button class="rt-report-reason" onclick="selectReason(this)">Other safety concern</button>
+    </div>
+    <label class="rt-also-block-row">
+      <input type="checkbox" id="also-block-checkbox" />
+      <span>Also block <span class="report-block-name">this user</span> so we don't match again</span>
+    </label>
+    <div class="rt-report-modal-actions">
+      <button class="rt-btn-secondary" onclick="closeReport()">Cancel</button>
+      <button class="rt-btn-proceed" style="background:#D85A30;color:white;" onclick="submitReport()">Submit report</button>
+    </div>
+  </div>
+</div>
+
+<div class="rt-report-modal-overlay" id="block-overlay">
+  <div class="rt-report-modal">
+    <div class="rt-report-modal-title">Block <span id="block-name">this user</span>?</div>
+    <div class="rt-report-modal-text">You won't see trips from this person again, and they won't be able to message or match with you. This can be undone later in your safety settings.</div>
+    <div class="rt-report-modal-actions">
+      <button class="rt-btn-secondary" onclick="closeBlock()">Cancel</button>
+      <button class="rt-btn-proceed" style="background:#D85A30;color:white;" onclick="confirmBlock()">Block</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="rt-toast"></div>
+
+<script>
+let pendingSend = null;
+let reportContext = null;
+let blockContext = null;
+let selectedReportReason = null;
+
+function toggleMenu(view) {
+  const menu = document.getElementById(view + '-menu');
+  const isOpen = menu.classList.contains('show');
+  document.querySelectorAll('.rt-menu-dropdown').forEach(m => m.classList.remove('show'));
+  if (!isOpen) menu.classList.add('show');
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.rt-menu-btn') && !e.target.closest('.rt-menu-dropdown')) {
+    document.querySelectorAll('.rt-menu-dropdown').forEach(m => m.classList.remove('show'));
+  }
+});
+
+function openReport(view, name) {
+  toggleMenu(view);
+  reportContext = { view, name };
+  selectedReportReason = null;
+  document.querySelectorAll('.rt-report-reason').forEach(r => r.classList.remove('selected'));
+  document.getElementById('report-name').textContent = name;
+  document.querySelectorAll('.report-block-name').forEach(el => el.textContent = name);
+  document.getElementById('also-block-checkbox').checked = false;
+  document.getElementById('report-overlay').classList.add('show');
+}
+
+function selectReason(el) {
+  document.querySelectorAll('.rt-report-reason').forEach(r => r.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedReportReason = el.textContent;
+}
+
+function closeReport() {
+  document.getElementById('report-overlay').classList.remove('show');
+  reportContext = null;
+}
+
+function submitReport() {
+  if (!selectedReportReason) {
+    showToast('Please select a reason before submitting');
+    return;
+  }
+  const alsoBlock = document.getElementById('also-block-checkbox').checked;
+  const name = reportContext ? reportContext.name : 'this user';
+  document.getElementById('report-overlay').classList.remove('show');
+  if (alsoBlock) {
+    showToast(`Report submitted and ${name} has been blocked.`);
+  } else {
+    showToast(`Report submitted. Our team will review this within 24 hours.`);
+  }
+  reportContext = null;
+}
+
+function openBlockConfirm(view, name) {
+  toggleMenu(view);
+  blockContext = { view, name };
+  document.getElementById('block-name').textContent = name;
+  document.getElementById('block-overlay').classList.add('show');
+}
+
+function closeBlock() {
+  document.getElementById('block-overlay').classList.remove('show');
+  blockContext = null;
+}
+
+function confirmBlock() {
+  const name = blockContext ? blockContext.name : 'this user';
+  document.getElementById('block-overlay').classList.remove('show');
+  showToast(`${name} has been blocked.`);
+  blockContext = null;
+}
+
+function switchView(view) {
+  document.querySelectorAll('.rt-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + view).classList.add('active');
+  document.getElementById('rider-view').style.display = view === 'rider' ? 'flex' : 'none';
+  document.getElementById('driver-view').style.display = view === 'driver' ? 'flex' : 'none';
+}
+
+function dismissDisclosure(view) {
+  document.getElementById(view + '-disclosure').style.display = 'none';
+  showToast("Got it, won't show this again");
+}
+
+function containsContactInfo(text) {
+  const phonePattern = /(\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4})/;
+  const emailPattern = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+  const addressKeywords = /\b(\d{1,5}\s+\w+\s+(street|st|avenue|ave|road|rd|drive|dr|lane|ln|way|blvd|boulevard))\b/i;
+  const socialKeywords = /\b(whatsapp|instagram|snapchat|telegram|venmo|zelle|cashapp|@\w+)\b/i;
+  return phonePattern.test(text) || emailPattern.test(text) || addressKeywords.test(text) || socialKeywords.test(text);
+}
+
+function getTime() {
+  const now = new Date();
+  let h = now.getHours();
+  const m = now.getMinutes().toString().padStart(2, '0');
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${h}:${m} ${ampm}`;
+}
+
+function appendMessage(view, text, sender) {
+  const area = document.getElementById(view + '-messages');
+  const row = document.createElement('div');
+  row.className = 'rt-msg-row ' + sender;
+  if (sender === 'me') {
+    row.innerHTML = `<div class="rt-msg-bubble"></div><div class="rt-msg-time">${getTime()} <span class="rt-read-receipt sent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l3 3 9-9M11 16l1 1 9-9"/></svg></span></div>`;
+  } else {
+    row.innerHTML = `<div class="rt-msg-bubble"></div><div class="rt-msg-time">${getTime()}</div>`;
+  }
+  row.querySelector('.rt-msg-bubble').textContent = text;
+  area.appendChild(row);
+  area.scrollTop = area.scrollHeight;
+  return row;
+}
+
+function markRead(row) {
+  if (!row) return;
+  const receipt = row.querySelector('.rt-read-receipt');
+  if (receipt) {
+    receipt.classList.remove('sent');
+    receipt.classList.add('read');
+  }
+}
+
+function showTyping(view) {
+  const area = document.getElementById(view + '-messages');
+  const row = document.createElement('div');
+  row.className = 'rt-typing-row';
+  row.id = view + '-typing-indicator';
+  row.innerHTML = `<div class="rt-typing-bubble"><span class="rt-typing-dot"></span><span class="rt-typing-dot"></span><span class="rt-typing-dot"></span></div>`;
+  area.appendChild(row);
+  area.scrollTop = area.scrollHeight;
+}
+
+function hideTyping(view) {
+  const indicator = document.getElementById(view + '-typing-indicator');
+  if (indicator) indicator.remove();
+}
+
+function fadeRetentionNote(view) {
+  const note = document.getElementById(view + '-retention-note');
+  if (note && !note.classList.contains('hidden')) {
+    note.classList.add('hidden');
+  }
+}
+
+function sendMessage(view) {
+  const input = document.getElementById(view + '-input');
+  const text = input.value.trim();
+  if (!text) return;
+  if (containsContactInfo(text)) {
+    pendingSend = { view, text };
+    document.getElementById('contact-overlay').classList.add('show');
+    return;
+  }
+  const sentRow = appendMessage(view, text, 'me');
+  input.value = '';
+  fadeRetentionNote(view);
+  setTimeout(() => markRead(sentRow), 900);
+  setTimeout(() => showTyping(view), 1100);
+  setTimeout(() => { hideTyping(view); simulateReply(view); }, 2400);
+}
+
+function confirmContactShare() {
+  if (!pendingSend) return;
+  const { view, text } = pendingSend;
+  document.getElementById('contact-overlay').classList.remove('show');
+  const sentRow = appendMessage(view, text, 'me');
+  document.getElementById(view + '-input').value = '';
+  pendingSend = null;
+  fadeRetentionNote(view);
+  setTimeout(() => markRead(sentRow), 900);
+  setTimeout(() => showTyping(view), 1100);
+  setTimeout(() => { hideTyping(view); simulateReply(view); }, 2400);
+}
+
+function cancelContactShare() {
+  document.getElementById('contact-overlay').classList.remove('show');
+  if (pendingSend) {
+    document.getElementById(pendingSend.view + '-input').focus();
+  }
+  pendingSend = null;
+}
+
+function quickSend(view, text) {
+  const sentRow = appendMessage(view, text, 'me');
+  fadeRetentionNote(view);
+  setTimeout(() => markRead(sentRow), 900);
+  setTimeout(() => showTyping(view), 1100);
+  setTimeout(() => { hideTyping(view); simulateReply(view); }, 2400);
+}
+
+function simulateReply(view) {
+  const replies = view === 'rider'
+    ? ["Got it, thanks for the heads up!", "Sounds good, see you soon.", "No problem at all."]
+    : ["Thanks for letting me know!", "Okay, I'll be ready.", "Got it, appreciate the update."];
+  const reply = replies[Math.floor(Math.random() * replies.length)];
+  appendMessage(view, reply, 'them');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+
+</body>
+</html>

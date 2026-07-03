@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roadtripper — Trip Confirmation</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #F7F6F3;
+    color: #1A1A18;
+    padding: 24px 16px;
+  }
+  .rt-app {
+    max-width: 560px;
+    margin: 0 auto;
+    background: #FFFFFF;
+    border-radius: 16px;
+    border: 1px solid #E5E2DC;
+    overflow: hidden;
+  }
+  .rt-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #E5E2DC;
+  }
+  .rt-logo { font-size: 18px; font-weight: 600; color: #1A1A18; letter-spacing: -0.3px; }
+  .rt-logo span { color: #1D9E75; }
+  .rt-nav-tabs { display: flex; gap: 4px; }
+  .rt-tab {
+    padding: 7px 14px; border-radius: 8px; font-size: 13px; cursor: pointer;
+    border: 1px solid transparent; color: #5F5E5A; background: transparent;
+    transition: all 0.15s; font-family: inherit;
+  }
+  .rt-tab.active { background: #F2F1ED; border-color: #E5E2DC; color: #1A1A18; font-weight: 600; }
+  .rt-tab:hover:not(.active) { background: #F7F6F3; }
+  .rt-main { padding: 24px 20px; max-height: 80vh; overflow-y: auto; }
+  .rt-view { display: none; }
+  .rt-view.active { display: block; }
+
+  .rt-status-banner {
+    display: flex; align-items: center; gap: 10px;
+    background: #E1F5EE; border: 1px solid #5DCAA5; border-radius: 12px;
+    padding: 14px 16px; margin-bottom: 20px;
+  }
+  .rt-status-icon {
+    width: 32px; height: 32px; border-radius: 50%; background: #1D9E75;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .rt-status-icon svg { width: 17px; height: 17px; color: white; }
+  .rt-status-text { font-size: 14px; font-weight: 600; color: #085041; }
+  .rt-status-sub { font-size: 12px; color: #0F6E56; margin-top: 1px; }
+
+  .rt-route-card {
+    border: 1px solid #E5E2DC; border-radius: 12px; padding: 16px; margin-bottom: 16px;
+    background: #FAFAF8;
+  }
+  .rt-route-line { display: flex; gap: 12px; }
+  .rt-route-dots { display: flex; flex-direction: column; align-items: center; padding-top: 4px; }
+  .rt-route-dot { width: 9px; height: 9px; border-radius: 50%; background: #1D9E75; flex-shrink: 0; }
+  .rt-route-dot.end { background: #D85A30; }
+  .rt-route-connector { width: 1.5px; flex: 1; background: #D8D5CD; margin: 4px 0; min-height: 28px; }
+  .rt-route-points { flex: 1; }
+  .rt-route-point { margin-bottom: 26px; }
+  .rt-route-point:last-child { margin-bottom: 0; }
+  .rt-route-label { font-size: 11px; color: #8C8A84; text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; }
+  .rt-route-place { font-size: 14px; color: #1A1A18; font-weight: 600; margin-top: 2px; }
+
+  .rt-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .rt-detail-box { background: #FAFAF8; border: 1px solid #E5E2DC; border-radius: 10px; padding: 12px 14px; }
+  .rt-detail-label { font-size: 10px; color: #8C8A84; text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; margin-bottom: 4px; }
+  .rt-detail-val { font-size: 15px; font-weight: 600; color: #1A1A18; }
+  .rt-detail-val.price { color: #0F6E56; }
+
+  .rt-section { margin-bottom: 18px; }
+  .rt-section-label {
+    font-size: 11px; font-weight: 600; color: #8C8A84; text-transform: uppercase;
+    letter-spacing: 0.6px; margin-bottom: 10px;
+  }
+  .rt-card { background: #FAFAF8; border: 1px solid #E5E2DC; border-radius: 12px; padding: 14px 16px; }
+
+  .rt-match-row { display: flex; align-items: center; gap: 12px; }
+  .rt-match-avatar {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: linear-gradient(135deg, #1D9E75, #5DCAA5);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 600; color: white; flex-shrink: 0;
+  }
+  .rt-match-avatar.rider { background: linear-gradient(135deg, #5B8FD9, #8AB4E8); }
+  .rt-match-info { flex: 1; min-width: 0; }
+  .rt-match-name { font-size: 14px; font-weight: 600; color: #1A1A18; }
+  .rt-match-meta { font-size: 12px; color: #5F5E5A; margin-top: 1px; }
+  .rt-match-rating { display: flex; align-items: center; gap: 4px; font-size: 12px; color: #1A1A18; margin-top: 3px; }
+  .rt-verified-badge {
+    display: inline-flex; align-items: center; gap: 4px; font-size: 10px;
+    padding: 2px 7px; border-radius: 999px; background: #E1F5EE;
+    border: 1px solid #5DCAA5; color: #085041; font-weight: 600; margin-top: 4px;
+  }
+  .rt-verified-badge svg { width: 9px; height: 9px; }
+  .rt-view-profile-link {
+    font-size: 12px; color: #1D9E75; text-decoration: underline;
+    text-underline-offset: 2px; cursor: pointer; flex-shrink: 0; white-space: nowrap;
+  }
+
+  .rt-prefs-list { display: flex; gap: 6px; flex-wrap: wrap; }
+  .rt-pref-tag { font-size: 11px; padding: 3px 9px; border-radius: 999px; background: #F2F1ED; border: 1px solid #E5E2DC; color: #5F5E5A; }
+
+  .rt-vehicle-row { display: flex; align-items: center; gap: 12px; }
+  .rt-vehicle-icon {
+    width: 42px; height: 42px; border-radius: 10px; background: #FFFFFF;
+    border: 1px solid #E5E2DC; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .rt-vehicle-icon svg { width: 20px; height: 20px; color: #5F5E5A; }
+  .rt-vehicle-name { font-size: 13px; font-weight: 600; color: #1A1A18; }
+  .rt-vehicle-sub { font-size: 12px; color: #5F5E5A; margin-top: 1px; }
+
+  .rt-note-text { font-size: 13px; color: #5F5E5A; line-height: 1.5; font-style: italic; }
+
+  .rt-action-row { display: flex; gap: 10px; margin-top: 4px; }
+  .rt-btn-message {
+    flex: 1; padding: 12px; border-radius: 10px; background: #1D9E75; color: #04342C;
+    border: none; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+    display: flex; align-items: center; justify-content: center; gap: 7px; transition: opacity 0.15s;
+  }
+  .rt-btn-message:hover { opacity: 0.88; }
+  .rt-btn-message svg { width: 15px; height: 15px; }
+
+  .rt-cancel-link {
+    display: block; text-align: center; width: 100%; margin-top: 18px;
+    font-size: 13px; color: #B5483B; cursor: pointer; background: none; border: none;
+    font-family: inherit; padding: 8px;
+  }
+  .rt-cancel-link:hover { text-decoration: underline; }
+
+  .rt-cancel-modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(26,26,24,0.45);
+    align-items: center; justify-content: center; padding: 20px; z-index: 50;
+  }
+  .rt-cancel-modal-overlay.show { display: flex; }
+  .rt-cancel-modal {
+    background: white; border-radius: 14px; padding: 22px; max-width: 380px; width: 100%;
+  }
+  .rt-cancel-modal-title { font-size: 15px; font-weight: 600; color: #1A1A18; margin-bottom: 8px; }
+  .rt-cancel-modal-text { font-size: 13px; color: #5F5E5A; line-height: 1.55; margin-bottom: 18px; }
+  .rt-cancel-modal-actions { display: flex; gap: 10px; }
+  .rt-btn-secondary {
+    flex: 1; padding: 11px; border-radius: 10px; background: #F2F1ED; color: #1A1A18;
+    border: none; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .rt-btn-danger {
+    flex: 1; padding: 11px; border-radius: 10px; background: #D85A30; color: white;
+    border: none; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+
+  .rt-toast {
+    display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #085041; color: #9FE1CB; padding: 11px 20px; border-radius: 10px;
+    font-size: 13px; z-index: 100; white-space: nowrap;
+  }
+  .rt-toast.show { display: block; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: #D8D5CD; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="rt-app">
+  <nav class="rt-nav">
+    <div class="rt-logo">road<span>tripper</span></div>
+    <div class="rt-nav-tabs">
+      <button class="rt-tab active" id="tab-rider" onclick="switchView('rider')">Rider view</button>
+      <button class="rt-tab" id="tab-driver" onclick="switchView('driver')">Driver view</button>
+    </div>
+  </nav>
+
+  <div class="rt-main">
+
+    <!-- RIDER VIEW -->
+    <div id="rider-view" class="rt-view active">
+      <div class="rt-status-banner">
+        <div class="rt-status-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <div>
+          <div class="rt-status-text">Trip confirmed</div>
+          <div class="rt-status-sub">Rafael accepted your trip at the posted price</div>
+        </div>
+      </div>
+
+      <div class="rt-route-card">
+        <div class="rt-route-line">
+          <div class="rt-route-dots">
+            <div class="rt-route-dot"></div>
+            <div class="rt-route-connector"></div>
+            <div class="rt-route-dot end"></div>
+          </div>
+          <div class="rt-route-points">
+            <div class="rt-route-point">
+              <div class="rt-route-label">Pickup</div>
+              <div class="rt-route-place">Doral, FL</div>
+            </div>
+            <div class="rt-route-point">
+              <div class="rt-route-label">Destination</div>
+              <div class="rt-route-place">Orlando, FL</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rt-detail-grid">
+        <div class="rt-detail-box">
+          <div class="rt-detail-label">Date &amp; time</div>
+          <div class="rt-detail-val">Jun 18, 7:00 AM</div>
+        </div>
+        <div class="rt-detail-box">
+          <div class="rt-detail-label">Agreed price</div>
+          <div class="rt-detail-val price">$140</div>
+        </div>
+        <div class="rt-detail-box">
+          <div class="rt-detail-label">Driver ETA to pickup</div>
+          <div class="rt-detail-val">18 min</div>
+        </div>
+        <div class="rt-detail-box">
+          <div class="rt-detail-label">Passengers</div>
+          <div class="rt-detail-val">2 · 2 bags</div>
+        </div>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-label">Your driver</div>
+        <div class="rt-card">
+          <div class="rt-match-row">
+            <div class="rt-match-avatar">RM</div>
+            <div class="rt-match-info">
+              <div class="rt-match-name">Rafael M.</div>
+              <div class="rt-match-meta">2023 Hyundai Sonata · Black</div>
+              <div class="rt-match-rating">★ 4.9 · 96% on-time</div>
+              <div class="rt-verified-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>
+                Verified driver
+              </div>
+            </div>
+            <div class="rt-view-profile-link" onclick="showToast('Opening Rafael\'s profile')">View profile</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-label">Your trip preferences</div>
+        <div class="rt-card">
+          <div class="rt-prefs-list">
+            <span class="rt-pref-tag">No smoking</span>
+            <span class="rt-pref-tag">AC required</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-label">Notes to driver</div>
+        <div class="rt-card">
+          <div class="rt-note-text">"Early morning preferred. Will be waiting by the front entrance."</div>
+        </div>
+      </div>
+
+      <div class="rt-action-row">
+        <button class="rt-btn-message" onclick="showToast('Opening message thread with Rafael')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Message Rafael
+        </button>
+      </div>
+
+      <button class="rt-cancel-link" onclick="openCancel('rider')">Cancel this trip</button>
+    </div>
+
+    <!-- DRIVER VIEW -->
+    <div id="driver-view" class="rt-view">
+      <div class="rt-status-banner">
+        <div class="rt-status-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <div>
+          <div class="rt-status-text">Trip confirmed</div>
+          <div class="rt-status-sub">You accepted this trip at the rider's posted price</div>
+        </div>
+      </div>
+
+      <div class="rt-route-card">
+        <div class="rt-route-line">
+          <div class="rt-route-dots">
+            <div class="rt-route-dot"></div>
+            <div class="rt-route-connector"></div>
+            <div class="rt-route-dot end"></div>
+          </div>
+          <div class="rt-route-points">
+            <div class="rt-route-point">
+              <div class="rt-route-label">Pickup</div>
+              <div class="rt-route-place">Doral, FL</div>
+            </div>
+            <div class="rt-route-point">
+              <div class="rt-route-label">Destination</div>
+              <div class="rt-route-place">Orlando, FL</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rt-detail-grid">
+        <div class="rt-detail-box">
+          <div class="rt-detail-label">Date &amp; time</div>
+          <div class="rt-detail-val">Jun 18, 7:00 AM</div>
+        </div>
+        <div class="rt-detail-box">
+          <div class="rt-detail-label">Agreed price</div>
+          <div class="rt-detail-val price">$140</div>
+        </div>
+        <div class="rt-detail-box">
+          <div class="rt-detail-label">Your ETA given</div>
+          <div class="rt-detail-val">18 min</div>
+        </div>
+        <div class="rt-detail-box">
+          <div class="rt-detail-label">Passengers</div>
+          <div class="rt-detail-val">2 · 2 bags</div>
+        </div>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-label">Your rider</div>
+        <div class="rt-card">
+          <div class="rt-match-row">
+            <div class="rt-match-avatar rider">CM</div>
+            <div class="rt-match-info">
+              <div class="rt-match-name">Carlos M.</div>
+              <div class="rt-match-meta">8 completed trips</div>
+              <div class="rt-match-rating">★ 4.8 from drivers</div>
+              <div class="rt-verified-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>
+                Verified rider
+              </div>
+            </div>
+            <div class="rt-view-profile-link" onclick="showToast('Opening Carlos\'s profile')">View profile</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-label">Rider's trip preferences</div>
+        <div class="rt-card">
+          <div class="rt-prefs-list">
+            <span class="rt-pref-tag">No smoking</span>
+            <span class="rt-pref-tag">AC required</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-label">Notes from rider</div>
+        <div class="rt-card">
+          <div class="rt-note-text">"Early morning preferred. Will be waiting by the front entrance."</div>
+        </div>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-label">Estimated earnings</div>
+        <div class="rt-card">
+          <div class="rt-match-row" style="gap:0;">
+            <div style="flex:1;">
+              <div class="rt-detail-label" style="margin-bottom:2px;">After estimated costs</div>
+              <div class="rt-detail-val" style="color:#0F6E56; font-size:17px;">+$60.45 profit</div>
+            </div>
+            <div class="rt-view-profile-link" onclick="showToast('Opening full cost breakdown')">See breakdown</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rt-action-row">
+        <button class="rt-btn-message" onclick="showToast('Opening message thread with Carlos')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Message Carlos
+        </button>
+      </div>
+
+      <button class="rt-cancel-link" onclick="openCancel('driver')">Cancel this trip</button>
+    </div>
+
+  </div>
+</div>
+
+<div class="rt-cancel-modal-overlay" id="cancel-overlay">
+  <div class="rt-cancel-modal">
+    <div class="rt-cancel-modal-title">Cancel this trip?</div>
+    <div class="rt-cancel-modal-text" id="cancel-modal-text">The other party will be notified immediately so they can make other plans. This can't be undone.</div>
+    <div class="rt-cancel-modal-actions">
+      <button class="rt-btn-secondary" onclick="closeCancel()">Keep trip</button>
+      <button class="rt-btn-danger" onclick="confirmCancel()">Cancel trip</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="rt-toast"></div>
+
+<script>
+let cancelingAs = null;
+
+function switchView(view) {
+  document.querySelectorAll('.rt-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.rt-view').forEach(v => v.classList.remove('active'));
+  document.getElementById('tab-' + view).classList.add('active');
+  document.getElementById(view + '-view').classList.add('active');
+}
+
+function openCancel(as) {
+  cancelingAs = as;
+  const text = as === 'rider'
+    ? "Rafael will be notified immediately so he can find another trip. This can't be undone."
+    : "Carlos will be notified immediately so he can find another driver. This can't be undone.";
+  document.getElementById('cancel-modal-text').textContent = text;
+  document.getElementById('cancel-overlay').classList.add('show');
+}
+
+function closeCancel() {
+  document.getElementById('cancel-overlay').classList.remove('show');
+}
+
+function confirmCancel() {
+  document.getElementById('cancel-overlay').classList.remove('show');
+  const who = cancelingAs === 'rider' ? 'Rafael' : 'Carlos';
+  showToast(`Trip cancelled. ${who} has been notified.`);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+
+</body>
+</html>

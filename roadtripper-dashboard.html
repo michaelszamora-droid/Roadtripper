@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roadtripper — My Trips</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #F7F6F3; color: #1A1A18; padding: 24px 16px; }
+  .rt-app { max-width: 680px; margin: 0 auto; background: #FFFFFF; border-radius: 16px; border: 1px solid #E5E2DC; overflow: hidden; }
+  .rt-nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #E5E2DC; }
+  .rt-logo { font-size: 18px; font-weight: 600; color: #1A1A18; letter-spacing: -0.3px; }
+  .rt-logo span { color: #1D9E75; }
+  .rt-role-toggle { display: flex; gap: 4px; background: #F2F1ED; border-radius: 10px; padding: 3px; }
+  .rt-role-btn { padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; background: transparent; color: #5F5E5A; font-family: inherit; transition: all 0.15s; }
+  .rt-role-btn.active { background: white; color: #1A1A18; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .rt-user-bar { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid #E5E2DC; background: #FAFAF8; }
+  .rt-user-avatar { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; color: white; flex-shrink: 0; }
+  .rt-user-avatar.rider { background: linear-gradient(135deg, #5B8FD9, #8AB4E8); }
+  .rt-user-avatar.driver { background: linear-gradient(135deg, #1D9E75, #5DCAA5); }
+  .rt-user-info { flex: 1; }
+  .rt-user-name { font-size: 14px; font-weight: 600; color: #1A1A18; }
+  .rt-user-meta { font-size: 12px; color: #5F5E5A; margin-top: 1px; }
+  .rt-user-stats { display: flex; gap: 16px; }
+  .rt-user-stat { text-align: right; }
+  .rt-user-stat-val { font-size: 15px; font-weight: 700; color: #1A1A18; }
+  .rt-user-stat-label { font-size: 10px; color: #8C8A84; margin-top: 1px; }
+  .rt-avail-bar { display: flex; align-items: center; justify-content: space-between; padding: 11px 20px; border-bottom: 1px solid #E5E2DC; background: #FAFAF8; }
+  .rt-avail-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #1A1A18; font-weight: 500; }
+  .rt-avail-pulse { width: 8px; height: 8px; border-radius: 50%; background: #D8D5CD; flex-shrink: 0; transition: background 0.2s; }
+  .rt-avail-pulse.on { background: #1D9E75; }
+  .rt-avail-sub { font-size: 11px; color: #8C8A84; margin-top: 1px; }
+  .rt-toggle-switch { width: 36px; height: 20px; border-radius: 10px; background: #D8D5CD; position: relative; cursor: pointer; flex-shrink: 0; transition: background 0.2s; border: none; }
+  .rt-toggle-switch.on { background: #1D9E75; }
+  .rt-toggle-knob { width: 16px; height: 16px; border-radius: 50%; background: white; position: absolute; top: 2px; left: 2px; transition: left 0.2s; pointer-events: none; }
+  .rt-toggle-switch.on .rt-toggle-knob { left: 18px; }
+  .rt-main { padding: 20px; max-height: 68vh; overflow-y: auto; }
+  .rt-view { display: none; }
+  .rt-view.active { display: block; }
+  .rt-post-trip-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px; border-radius: 10px; background: #1D9E75; color: #04342C; border: none; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; margin-bottom: 20px; transition: opacity 0.15s; }
+  .rt-post-trip-btn:hover { opacity: 0.88; }
+  .rt-post-trip-btn svg { width: 16px; height: 16px; }
+  .rt-section { margin-bottom: 24px; }
+  .rt-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .rt-section-label { font-size: 11px; font-weight: 600; color: #8C8A84; text-transform: uppercase; letter-spacing: 0.6px; }
+  .rt-section-count { font-size: 11px; color: #B5B2AA; font-weight: 500; }
+  .rt-trip-card { background: #FAFAF8; border: 1px solid #E5E2DC; border-radius: 12px; padding: 16px; margin-bottom: 10px; transition: border-color 0.15s; }
+  .rt-trip-card:hover { border-color: #D8D5CD; }
+  .rt-trip-card.active-card { border-color: #1D9E75; background: #F5FBF8; }
+  .rt-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; gap: 10px; }
+  .rt-route { font-size: 14px; font-weight: 600; color: #1A1A18; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .rt-route svg { width: 14px; height: 14px; color: #1D9E75; flex-shrink: 0; }
+  .rt-arrow { width: 12px; height: 12px; color: #8C8A84; flex-shrink: 0; }
+  .rt-status-pill { font-size: 11px; padding: 3px 10px; border-radius: 999px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+  .rt-status-pill.upcoming { background: #EAF1FB; color: #2E5A94; }
+  .rt-status-pill.active { background: #E1F5EE; color: #085041; }
+  .rt-status-pill.completed { background: #F2F1ED; color: #5F5E5A; }
+  .rt-status-pill.cancelled { background: #FAECE7; color: #993C1D; }
+  .rt-status-pill.pending { background: #FAF7EF; color: #7A6420; }
+  .rt-card-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+  .rt-meta-item { font-size: 12px; color: #5F5E5A; display: flex; align-items: center; gap: 4px; }
+  .rt-meta-item svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .rt-pref-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+  .rt-pref-tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #F2F1ED; border: 1px solid #E5E2DC; color: #5F5E5A; }
+  .rt-pref-tag.more { background: #E5E2DC; color: #8C8A84; cursor: pointer; }
+  .rt-pref-tag.more:hover { background: #D8D5CD; }
+  .rt-card-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid #E5E2DC; gap: 10px; }
+  .rt-match-mini { display: flex; align-items: center; gap: 8px; }
+  .rt-match-avatar-sm { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: white; flex-shrink: 0; }
+  .rt-match-avatar-sm.driver { background: linear-gradient(135deg, #1D9E75, #5DCAA5); }
+  .rt-match-avatar-sm.rider { background: linear-gradient(135deg, #5B8FD9, #8AB4E8); }
+  .rt-match-name { font-size: 12px; color: #1A1A18; font-weight: 500; }
+  .rt-match-rating { font-size: 11px; color: #E8A33D; }
+  .rt-price-tag { font-size: 16px; font-weight: 700; color: #1A1A18; }
+  .rt-price-tag.earned { color: #0F6E56; }
+  .rt-card-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .rt-btn-sm { padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; border: none; transition: all 0.15s; white-space: nowrap; }
+  .rt-btn-sm.green { background: #1D9E75; color: #04342C; }
+  .rt-btn-sm.green:hover { opacity: 0.88; }
+  .rt-btn-sm.outline { background: transparent; color: #1A1A18; border: 1px solid #E5E2DC; }
+  .rt-btn-sm.outline:hover { background: #F7F6F3; }
+  .rt-btn-sm.red { background: transparent; color: #B5483B; border: 1px solid #F0C4C0; }
+  .rt-btn-sm.red:hover { background: #FAECE7; }
+  .rt-bids-banner { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; color: #7A6420; background: #FAF7EF; border: 1px solid #E8DDB8; border-radius: 8px; padding: 8px 12px; margin-top: 10px; }
+  .rt-bids-banner-left { display: flex; align-items: center; gap: 7px; }
+  .rt-bids-banner svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .rt-bid-badge { background: #D85A30; color: white; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 999px; }
+  .rt-rate-prompt { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #FAF7EF; border: 1px solid #E8DDB8; border-radius: 8px; padding: 8px 12px; margin-top: 10px; }
+  .rt-rate-prompt-left { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #7A6420; }
+  .rt-rate-prompt-left svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .rt-rate-stars { display: flex; gap: 3px; }
+  .rt-rate-star { font-size: 18px; color: #D8D5CD; cursor: pointer; transition: color 0.1s; line-height: 1; }
+  .rt-rate-star.lit { color: #E8A33D; }
+  .rt-earnings-card { background: linear-gradient(135deg, #0F6E56, #1D9E75); border-radius: 12px; padding: 18px 20px; margin-bottom: 20px; color: white; }
+  .rt-earnings-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .rt-earnings-label { font-size: 11px; font-weight: 600; opacity: 0.75; text-transform: uppercase; letter-spacing: 0.5px; }
+  .rt-period-toggle { display: flex; gap: 2px; background: rgba(0,0,0,0.15); border-radius: 7px; padding: 2px; }
+  .rt-period-btn { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; background: transparent; color: rgba(255,255,255,0.65); font-family: inherit; transition: all 0.15s; }
+  .rt-period-btn.active { background: rgba(255,255,255,0.2); color: white; }
+  .rt-earnings-val { font-size: 28px; font-weight: 700; margin: 8px 0 12px; }
+  .rt-earnings-row { display: flex; gap: 20px; flex-wrap: wrap; }
+  .rt-earnings-stat-val { font-size: 15px; font-weight: 700; }
+  .rt-earnings-stat-label { font-size: 10px; opacity: 0.7; margin-top: 1px; }
+  .rt-breakdown-link-card { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(0,0,0,0.12); border-radius: 8px; margin-top: 14px; cursor: pointer; transition: background 0.15s; border: none; width: 100%; font-family: inherit; }
+  .rt-breakdown-link-card:hover { background: rgba(0,0,0,0.2); }
+  .rt-breakdown-link-left { display: flex; align-items: center; gap: 8px; font-size: 12px; color: rgba(255,255,255,0.9); font-weight: 500; }
+  .rt-breakdown-link-left svg { width: 14px; height: 14px; }
+  .rt-breakdown-link-right svg { width: 14px; height: 14px; color: rgba(255,255,255,0.6); }
+  .rt-breakdown-panel { display: none; background: #FAFAF8; border: 1px solid #E5E2DC; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+  .rt-breakdown-panel.show { display: block; }
+  .rt-breakdown-panel-title { font-size: 11px; font-weight: 600; color: #8C8A84; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .rt-breakdown-row { display: flex; justify-content: space-between; font-size: 13px; color: #5F5E5A; margin-bottom: 8px; }
+  .rt-breakdown-row:last-child { margin-bottom: 0; }
+  .rt-breakdown-row.total { font-weight: 600; color: #1A1A18; padding-top: 8px; border-top: 1px solid #E5E2DC; margin-top: 4px; }
+  .rt-breakdown-row.profit { color: #0F6E56; font-weight: 600; }
+
+  /* Rating modal */
+  .rt-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(26,26,24,0.5); align-items: center; justify-content: center; padding: 20px; z-index: 60; }
+  .rt-modal-overlay.show { display: flex; }
+  .rt-modal { background: white; border-radius: 14px; padding: 24px; max-width: 360px; width: 100%; }
+  .rt-modal-title { font-size: 15px; font-weight: 600; color: #1A1A18; margin-bottom: 4px; }
+  .rt-modal-sub { font-size: 12.5px; color: #5F5E5A; margin-bottom: 20px; line-height: 1.5; }
+  .rt-modal-stars { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; }
+  .rt-modal-star { font-size: 32px; color: #D8D5CD; cursor: pointer; transition: color 0.1s; line-height: 1; }
+  .rt-modal-star.lit { color: #E8A33D; }
+  .rt-modal-textarea { width: 100%; font-size: 13px; padding: 10px 12px; border: 1px solid #E5E2DC; border-radius: 9px; outline: none; font-family: inherit; resize: none; min-height: 72px; margin-bottom: 16px; background: #FAFAF8; }
+  .rt-modal-textarea:focus { border-color: #1D9E75; background: white; }
+  .rt-modal-actions { display: flex; gap: 10px; }
+  .rt-btn-secondary { flex: 1; padding: 11px; border-radius: 9px; background: #F2F1ED; color: #1A1A18; border: none; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .rt-btn-submit { flex: 1; padding: 11px; border-radius: 9px; background: #1D9E75; color: #04342C; border: none; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+  .rt-toast { display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #085041; color: #9FE1CB; padding: 11px 20px; border-radius: 10px; font-size: 13px; z-index: 100; white-space: nowrap; }
+  .rt-toast.show { display: block; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: #D8D5CD; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="rt-app">
+  <nav class="rt-nav">
+    <div class="rt-logo">road<span>tripper</span></div>
+    <div class="rt-role-toggle">
+      <button class="rt-role-btn active" id="btn-rider" onclick="switchRole('rider')">Rider</button>
+      <button class="rt-role-btn" id="btn-driver" onclick="switchRole('driver')">Driver</button>
+    </div>
+  </nav>
+
+  <!-- RIDER VIEW -->
+  <div id="rider-view" class="rt-view active">
+    <div class="rt-user-bar">
+      <div class="rt-user-avatar rider">CM</div>
+      <div class="rt-user-info">
+        <div class="rt-user-name">Carlos M.</div>
+        <div class="rt-user-meta">★ 4.8 from drivers · Rider since April 2026</div>
+      </div>
+      <div class="rt-user-stats">
+        <div class="rt-user-stat">
+          <div class="rt-user-stat-val">8</div>
+          <div class="rt-user-stat-label">Total trips</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rt-main">
+      <button class="rt-post-trip-btn" onclick="showToast('Opening trip posting form')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Post a new trip
+      </button>
+
+      <div class="rt-section">
+        <div class="rt-section-header">
+          <div class="rt-section-label">Active</div>
+          <div class="rt-section-count">1 trip</div>
+        </div>
+        <div class="rt-trip-card active-card">
+          <div class="rt-card-top">
+            <div class="rt-route">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Doral, FL <svg class="rt-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg> Orlando, FL
+            </div>
+            <span class="rt-status-pill active">● In progress</span>
+          </div>
+          <div class="rt-card-meta">
+            <span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Today · 7:00 AM</span>
+            <span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>2 pax · 2 bags</span>
+            <span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Picked up 42 min ago</span>
+          </div>
+          <div class="rt-card-footer">
+            <div class="rt-match-mini">
+              <div class="rt-match-avatar-sm driver">RM</div>
+              <div><div class="rt-match-name">Rafael M.</div><div class="rt-match-rating">★ 4.9</div></div>
+            </div>
+            <div class="rt-price-tag">$140</div>
+          </div>
+          <div class="rt-card-actions">
+            <button class="rt-btn-sm outline" onclick="showToast('Opening chat with Rafael')">Message driver</button>
+            <button class="rt-btn-sm outline" onclick="showToast('Opening trip details')">View details</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-header">
+          <div class="rt-section-label">Upcoming</div>
+          <div class="rt-section-count">2 trips</div>
+        </div>
+
+        <div class="rt-trip-card">
+          <div class="rt-card-top">
+            <div class="rt-route">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Miami, FL <svg class="rt-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg> Tampa, FL
+            </div>
+            <span class="rt-status-pill upcoming">Confirmed</span>
+          </div>
+          <div class="rt-card-meta">
+            <span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Jun 24 · 9:00 AM</span>
+            <span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>1 pax · 1 bag</span>
+          </div>
+          <div class="rt-card-footer">
+            <div class="rt-match-mini">
+              <div class="rt-match-avatar-sm driver">PS</div>
+              <div><div class="rt-match-name">Priya S.</div><div class="rt-match-rating">★ 4.8</div></div>
+            </div>
+            <div class="rt-price-tag">$115</div>
+          </div>
+          <div class="rt-card-actions">
+            <button class="rt-btn-sm outline" onclick="showToast('Opening chat with Priya')">Message driver</button>
+            <button class="rt-btn-sm outline" onclick="showToast('Opening trip details')">View details</button>
+            <button class="rt-btn-sm red" onclick="showToast('Cancel flow opened')">Cancel</button>
+          </div>
+        </div>
+
+        <div class="rt-trip-card">
+          <div class="rt-card-top">
+            <div class="rt-route">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Doral, FL <svg class="rt-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg> Jacksonville, FL
+            </div>
+            <span class="rt-status-pill pending">Awaiting driver</span>
+          </div>
+          <div class="rt-card-meta">
+            <span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Jun 28 · 6:00 AM</span>
+            <span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>2 pax · 3+ bags</span>
+          </div>
+          <div class="rt-card-footer">
+            <div style="font-size:12px;color:#5F5E5A;">No driver yet</div>
+            <div class="rt-price-tag">$230</div>
+          </div>
+          <div class="rt-bids-banner">
+            <div class="rt-bids-banner-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span>3 drivers responded</span>
+              <span class="rt-bid-badge">2 new</span>
+            </div>
+            <button class="rt-btn-sm green" onclick="showToast('Opening bid review')">Review bids</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-header">
+          <div class="rt-section-label">Completed</div>
+          <div class="rt-section-count">5 trips</div>
+        </div>
+
+        <div class="rt-trip-card">
+          <div class="rt-card-top">
+            <div class="rt-route">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Miami, FL <svg class="rt-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg> Key West, FL
+            </div>
+            <span class="rt-status-pill completed">Completed</span>
+          </div>
+          <div class="rt-card-meta">
+            <span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Jun 10, 2026</span>
+          </div>
+          <div class="rt-card-footer">
+            <div class="rt-match-mini">
+              <div class="rt-match-avatar-sm driver">DR</div>
+              <div><div class="rt-match-name">David R.</div><div class="rt-match-rating">★ 4.7</div></div>
+            </div>
+            <div class="rt-price-tag">$175</div>
+          </div>
+          <div class="rt-rate-prompt">
+            <div class="rt-rate-prompt-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              Rate David R.
+            </div>
+            <div class="rt-rate-stars" id="rider-stars-1">
+              <span class="rt-rate-star" onclick="hoverStars('rider-stars-1',1);openRating('David R.')">★</span>
+              <span class="rt-rate-star" onclick="hoverStars('rider-stars-1',2);openRating('David R.')">★</span>
+              <span class="rt-rate-star" onclick="hoverStars('rider-stars-1',3);openRating('David R.')">★</span>
+              <span class="rt-rate-star" onclick="hoverStars('rider-stars-1',4);openRating('David R.')">★</span>
+              <span class="rt-rate-star" onclick="hoverStars('rider-stars-1',5);openRating('David R.')">★</span>
+            </div>
+          </div>
+          <div class="rt-card-actions">
+            <button class="rt-btn-sm outline" onclick="showToast('Opening trip details')">View details</button>
+          </div>
+        </div>
+
+        <div class="rt-trip-card">
+          <div class="rt-card-top">
+            <div class="rt-route">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Doral, FL <svg class="rt-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg> Gainesville, FL
+            </div>
+            <span class="rt-status-pill cancelled">Cancelled</span>
+          </div>
+          <div class="rt-card-meta">
+            <span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>May 30, 2026</span>
+            <span class="rt-meta-item">Cancelled by driver</span>
+          </div>
+          <div class="rt-card-footer">
+            <div style="font-size:12px;color:#5F5E5A;">No charge</div>
+            <div class="rt-price-tag" style="color:#B5B2AA;text-decoration:line-through;">$165</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DRIVER VIEW -->
+  <div id="driver-view" class="rt-view">
+    <div class="rt-user-bar">
+      <div class="rt-user-avatar driver">RM</div>
+      <div class="rt-user-info">
+        <div class="rt-user-name">Rafael M.</div>
+        <div class="rt-user-meta">★ 4.9 · 96% on-time · Driver since March 2026</div>
+      </div>
+      <div class="rt-user-stats">
+        <div class="rt-user-stat">
+          <div class="rt-user-stat-val">142</div>
+          <div class="rt-user-stat-label">Total trips</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rt-avail-bar">
+      <div>
+        <div class="rt-avail-label">
+          <span class="rt-avail-pulse on" id="avail-pulse"></span>
+          <span id="avail-label-text">Available now</span>
+        </div>
+        <div class="rt-avail-sub" id="avail-sub-text">Visible to riders in your area</div>
+      </div>
+      <button class="rt-toggle-switch on" id="avail-toggle" onclick="toggleAvailability()">
+        <div class="rt-toggle-knob"></div>
+      </button>
+    </div>
+
+    <div class="rt-main">
+      <div class="rt-earnings-card">
+        <div class="rt-earnings-header">
+          <div class="rt-earnings-label" id="earnings-period-label">This month</div>
+          <div class="rt-period-toggle">
+            <button class="rt-period-btn active" id="period-week" onclick="setPeriod('week')">Week</button>
+            <button class="rt-period-btn" id="period-month" onclick="setPeriod('month')">Month</button>
+          </div>
+        </div>
+        <div class="rt-earnings-val" id="earnings-val">$1,840</div>
+        <div class="rt-earnings-row">
+          <div class="rt-earnings-stat">
+            <div class="rt-earnings-stat-val" id="earnings-trips">12</div>
+            <div class="rt-earnings-stat-label">Trips completed</div>
+          </div>
+          <div class="rt-earnings-stat">
+            <div class="rt-earnings-stat-val" id="earnings-avg">$153</div>
+            <div class="rt-earnings-stat-label">Avg. per trip</div>
+          </div>
+          <div class="rt-earnings-stat">
+            <div class="rt-earnings-stat-val">$0.41</div>
+            <div class="rt-earnings-stat-label">Avg. cost/mi</div>
+          </div>
+        </div>
+        <button class="rt-breakdown-link-card" onclick="toggleBreakdown()">
+          <div class="rt-breakdown-link-left">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            See cost breakdown
+          </div>
+          <div class="rt-breakdown-link-right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+        </button>
+      </div>
+
+      <div class="rt-breakdown-panel" id="driver-breakdown-panel">
+        <div class="rt-breakdown-panel-title">Estimated costs — this month</div>
+        <div class="rt-breakdown-row"><span>Gas (~$0.18/mi · est. 3,480 mi)</span><span>$626</span></div>
+        <div class="rt-breakdown-row"><span>Depreciation (~$0.08/mi)</span><span>$278</span></div>
+        <div class="rt-breakdown-row"><span>Maintenance & wear (~$0.06/mi)</span><span>$209</span></div>
+        <div class="rt-breakdown-row"><span>Insurance (~$0.05/mi)</span><span>$174</span></div>
+        <div class="rt-breakdown-row"><span>Platform fees (12 trips × $5)</span><span>$60</span></div>
+        <div class="rt-breakdown-row total"><span>Total estimated costs</span><span>$1,347</span></div>
+        <div class="rt-breakdown-row profit"><span>Estimated take-home</span><span>+$493</span></div>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-header">
+          <div class="rt-section-label">Active</div>
+          <div class="rt-section-count">1 trip</div>
+        </div>
+        <div class="rt-trip-card active-card">
+          <div class="rt-card-top">
+            <div class="rt-route">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Doral, FL <svg class="rt-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg> Orlando, FL
+            </div>
+            <span class="rt-status-pill active">● In progress</span>
+          </div>
+          <div class="rt-card-meta">
+            <span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Today · 7:00 AM</span>
+            <span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>2 pax · 2 bags</span>
+            <span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Picked up 42 min ago</span>
+          </div>
+          <div class="rt-card-footer">
+            <div class="rt-match-mini">
+              <div class="rt-match-avatar-sm rider">CM</div>
+              <div><div class="rt-match-name">Carlos M.</div><div class="rt-match-rating">★ 4.8</div></div>
+            </div>
+            <div class="rt-price-tag earned">+$140</div>
+          </div>
+          <div class="rt-card-actions">
+            <button class="rt-btn-sm outline" onclick="showToast('Opening chat with Carlos')">Message rider</button>
+            <button class="rt-btn-sm outline" onclick="showToast('Opening trip details')">View details</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-header">
+          <div class="rt-section-label">Upcoming</div>
+          <div class="rt-section-count">2 trips</div>
+        </div>
+        <div class="rt-trip-card">
+          <div class="rt-card-top">
+            <div class="rt-route">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Fort Lauderdale, FL <svg class="rt-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg> Tampa, FL
+            </div>
+            <span class="rt-status-pill upcoming">Confirmed</span>
+          </div>
+          <div class="rt-card-meta">
+            <span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Jun 19 · 9:30 AM</span>
+            <span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>1 pax · 1 bag</span>
+          </div>
+          <div class="rt-card-footer">
+            <div class="rt-match-mini">
+              <div class="rt-match-avatar-sm rider">PS</div>
+              <div><div class="rt-match-name">Priya S.</div><div class="rt-match-rating">★ 4.9</div></div>
+            </div>
+            <div class="rt-price-tag earned">+$110</div>
+          </div>
+          <div class="rt-card-actions">
+            <button class="rt-btn-sm outline" onclick="showToast('Opening chat with Priya')">Message rider</button>
+            <button class="rt-btn-sm outline" onclick="showToast('Opening trip details')">View details</button>
+            <button class="rt-btn-sm red" onclick="showToast('Cancel flow opened')">Cancel</button>
+          </div>
+        </div>
+        <div class="rt-trip-card">
+          <div class="rt-card-top">
+            <div class="rt-route">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Boca Raton, FL <svg class="rt-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg> Key West, FL
+            </div>
+            <span class="rt-status-pill upcoming">Confirmed</span>
+          </div>
+          <div class="rt-card-meta">
+            <span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Jun 22 · 8:00 AM</span>
+            <span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>2 pax · 2 bags</span>
+          </div>
+          <div id="prefs-boca-keywest"></div>
+          <div class="rt-card-footer">
+            <div class="rt-match-mini">
+              <div class="rt-match-avatar-sm rider">ML</div>
+              <div><div class="rt-match-name">Monica L.</div><div class="rt-match-rating">★ 4.7</div></div>
+            </div>
+            <div class="rt-price-tag earned">+$175</div>
+          </div>
+          <div class="rt-card-actions">
+            <button class="rt-btn-sm outline" onclick="showToast('Opening chat with Monica')">Message rider</button>
+            <button class="rt-btn-sm outline" onclick="showToast('Opening trip details')">View details</button>
+            <button class="rt-btn-sm red" onclick="showToast('Cancel flow opened')">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-header">
+          <div class="rt-section-label">Completed</div>
+          <div class="rt-section-count">139 trips</div>
+        </div>
+        <div class="rt-trip-card">
+          <div class="rt-card-top">
+            <div class="rt-route">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Miami, FL <svg class="rt-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg> Orlando, FL
+            </div>
+            <span class="rt-status-pill completed">Completed</span>
+          </div>
+          <div class="rt-card-meta">
+            <span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Jun 14, 2026</span>
+          </div>
+          <div class="rt-card-footer">
+            <div class="rt-match-mini">
+              <div class="rt-match-avatar-sm rider">CM</div>
+              <div><div class="rt-match-name">Carlos M.</div><div class="rt-match-rating">★ 4.8</div></div>
+            </div>
+            <div class="rt-price-tag earned">+$140</div>
+          </div>
+          <div class="rt-rate-prompt">
+            <div class="rt-rate-prompt-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              Rate Carlos M.
+            </div>
+            <div class="rt-rate-stars" id="driver-stars-1">
+              <span class="rt-rate-star" onclick="hoverStars('driver-stars-1',1);openRating('Carlos M.')">★</span>
+              <span class="rt-rate-star" onclick="hoverStars('driver-stars-1',2);openRating('Carlos M.')">★</span>
+              <span class="rt-rate-star" onclick="hoverStars('driver-stars-1',3);openRating('Carlos M.')">★</span>
+              <span class="rt-rate-star" onclick="hoverStars('driver-stars-1',4);openRating('Carlos M.')">★</span>
+              <span class="rt-rate-star" onclick="hoverStars('driver-stars-1',5);openRating('Carlos M.')">★</span>
+            </div>
+          </div>
+          <div class="rt-card-actions">
+            <button class="rt-btn-sm outline" onclick="showToast('Opening trip details')">View details</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Rating modal -->
+<div class="rt-modal-overlay" id="rating-overlay">
+  <div class="rt-modal">
+    <div class="rt-modal-title">Rate your trip with <span id="rating-name"></span></div>
+    <div class="rt-modal-sub">Your review helps the community. It's posted to their profile once submitted.</div>
+    <div class="rt-modal-stars" id="modal-stars">
+      <span class="rt-modal-star" onclick="setModalStar(1)">★</span>
+      <span class="rt-modal-star" onclick="setModalStar(2)">★</span>
+      <span class="rt-modal-star" onclick="setModalStar(3)">★</span>
+      <span class="rt-modal-star" onclick="setModalStar(4)">★</span>
+      <span class="rt-modal-star" onclick="setModalStar(5)">★</span>
+    </div>
+    <textarea class="rt-modal-textarea" id="rating-text" placeholder="Leave a comment (optional)..."></textarea>
+    <div class="rt-modal-actions">
+      <button class="rt-btn-secondary" onclick="closeRating()">Cancel</button>
+      <button class="rt-btn-submit" onclick="submitRating()">Submit review</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="rt-toast"></div>
+
+<script>
+let modalStarVal = 0;
+let availOn = true;
+
+// Initialize once DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+  renderPrefs('prefs-boca-keywest', ['No smoking', 'No pets', 'AC required', 'Quiet ride', 'No food/drinks']);
+  setPeriod('week');
+});
+
+const PERIOD_DATA = {
+  week: {
+    label: 'This week', val: '$480', trips: '3', avg: '$160',
+    breakdown: [
+      { label: 'Gas (~$0.18/mi · est. 870 mi)', val: '$157' },
+      { label: 'Depreciation (~$0.08/mi)', val: '$70' },
+      { label: 'Maintenance & wear (~$0.06/mi)', val: '$52' },
+      { label: 'Insurance (~$0.05/mi)', val: '$44' },
+      { label: 'Platform fees (3 trips × $5)', val: '$15' },
+    ],
+    total: '$338', profit: '+$142'
+  },
+  month: {
+    label: 'This month', val: '$1,840', trips: '12', avg: '$153',
+    breakdown: [
+      { label: 'Gas (~$0.18/mi · est. 3,480 mi)', val: '$626' },
+      { label: 'Depreciation (~$0.08/mi)', val: '$278' },
+      { label: 'Maintenance & wear (~$0.06/mi)', val: '$209' },
+      { label: 'Insurance (~$0.05/mi)', val: '$174' },
+      { label: 'Platform fees (12 trips × $5)', val: '$60' },
+    ],
+    total: '$1,347', profit: '+$493'
+  }
+};
+
+function switchRole(role) {
+  document.querySelectorAll('.rt-role-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.rt-view').forEach(v => v.classList.remove('active'));
+  document.getElementById('btn-' + role).classList.add('active');
+  document.getElementById(role + '-view').classList.add('active');
+}
+
+function toggleAvailability() {
+  availOn = !availOn;
+  const toggle = document.getElementById('avail-toggle');
+  const pulse = document.getElementById('avail-pulse');
+  const label = document.getElementById('avail-label-text');
+  const sub = document.getElementById('avail-sub-text');
+  toggle.classList.toggle('on', availOn);
+  pulse.classList.toggle('on', availOn);
+  label.textContent = availOn ? 'Available now' : 'Not available';
+  sub.textContent = availOn ? 'Visible to riders in your area' : 'You won\'t appear in rider searches';
+}
+
+function setPeriod(period) {
+  document.querySelectorAll('.rt-period-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('period-' + period).classList.add('active');
+  const d = PERIOD_DATA[period];
+  document.getElementById('earnings-period-label').textContent = d.label;
+  document.getElementById('earnings-val').textContent = d.val;
+  document.getElementById('earnings-trips').textContent = d.trips;
+  document.getElementById('earnings-avg').textContent = d.avg;
+  const panel = document.getElementById('driver-breakdown-panel');
+  panel.innerHTML = `
+    <div class="rt-breakdown-panel-title">Estimated costs — ${d.label.toLowerCase()}</div>
+    ${d.breakdown.map(r => `<div class="rt-breakdown-row"><span>${r.label}</span><span>${r.val}</span></div>`).join('')}
+    <div class="rt-breakdown-row total"><span>Total estimated costs</span><span>${d.total}</span></div>
+    <div class="rt-breakdown-row profit"><span>Estimated take-home</span><span>${d.profit}</span></div>`;
+}
+
+function toggleBreakdown() {
+  document.getElementById('driver-breakdown-panel').classList.toggle('show');
+}
+
+function hoverStars(containerId, count) {
+  const stars = document.getElementById(containerId).querySelectorAll('.rt-rate-star');
+  stars.forEach((s, i) => s.classList.toggle('lit', i < count));
+}
+
+function openRating(name) {
+  document.getElementById('rating-name').textContent = name;
+  document.getElementById('rating-text').value = '';
+  modalStarVal = 0;
+  document.querySelectorAll('.rt-modal-star').forEach(s => s.classList.remove('lit'));
+  document.getElementById('rating-overlay').classList.add('show');
+}
+
+function setModalStar(val) {
+  modalStarVal = val;
+  document.querySelectorAll('.rt-modal-star').forEach((s, i) => s.classList.toggle('lit', i < val));
+}
+
+function closeRating() {
+  document.getElementById('rating-overlay').classList.remove('show');
+}
+
+function submitRating() {
+  if (!modalStarVal) { showToast('Please select a star rating first'); return; }
+  document.getElementById('rating-overlay').classList.remove('show');
+  showToast('Review submitted — thank you!');
+}
+
+function renderPrefs(containerId, prefs, maxVisible = 2) {
+  const el = document.getElementById(containerId);
+  if (!el || !prefs || !prefs.length) return;
+  const visible = prefs.slice(0, maxVisible);
+  const overflow = prefs.length - maxVisible;
+  el.className = 'rt-pref-tags';
+  el.innerHTML = visible.map(p => `<span class="rt-pref-tag">${p}</span>`).join('') +
+    (overflow > 0 ? `<span class="rt-pref-tag more" onclick="showToast('Full preferences visible in trip details')">+${overflow} more</span>` : '');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
