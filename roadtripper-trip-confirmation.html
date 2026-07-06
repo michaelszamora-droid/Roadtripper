@@ -300,6 +300,25 @@
 
     <!-- DRIVER VIEW -->
     <div id="driver-view" class="rt-view">
+      <div class="rt-return-prompt" id="return-prompt">
+        <div class="rt-return-prompt-header">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+          <div>
+            <div class="rt-return-prompt-title">This rider also needs a return trip</div>
+            <div class="rt-return-prompt-sub">Orlando, FL → Doral, FL · Jun 18 · 6:00 PM · $275</div>
+          </div>
+        </div>
+        <div class="rt-return-prompt-note">You have first right of refusal. If you decline, it posts automatically to the marketplace.</div>
+        <div class="rt-return-timer" id="return-timer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Offer expires in <span id="timer-val">29:47</span>
+        </div>
+        <div class="rt-return-actions">
+          <button class="rt-btn-return-decline" onclick="declineReturn()">Pass — post it to market</button>
+          <button class="rt-btn-return-accept" onclick="acceptReturn()">Accept return — $275</button>
+        </div>
+      </div>
+
       <div class="rt-status-banner">
         <div class="rt-status-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
         <div>
@@ -393,25 +412,6 @@
             </div>
             <div class="rt-view-profile-link" onclick="showToast('Opening full cost breakdown')">See breakdown</div>
           </div>
-        </div>
-      </div>
-
-      <div class="rt-return-prompt" id="return-prompt">
-        <div class="rt-return-prompt-header">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-          <div>
-            <div class="rt-return-prompt-title">This rider also needs a return trip</div>
-            <div class="rt-return-prompt-sub">Orlando, FL → Doral, FL · Jun 18 · 6:00 PM · $275</div>
-          </div>
-        </div>
-        <div class="rt-return-prompt-note">You have first right of refusal. If you decline, it posts automatically to the marketplace.</div>
-        <div class="rt-return-timer" id="return-timer">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          Offer expires in <span id="timer-val">29:47</span>
-        </div>
-        <div class="rt-return-actions">
-          <button class="rt-btn-return-decline" onclick="declineReturn()">Pass — post it to market</button>
-          <button class="rt-btn-return-accept" onclick="acceptReturn()">Accept return — $275</button>
         </div>
       </div>
 
