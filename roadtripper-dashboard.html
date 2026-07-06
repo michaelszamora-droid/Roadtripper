@@ -131,6 +131,14 @@
 
   .rt-toast { display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #085041; color: #9FE1CB; padding: 11px 20px; border-radius: 10px; font-size: 13px; z-index: 100; white-space: nowrap; }
   .rt-toast.show { display: block; }
+  .rt-return-trip-card { background: #FAFAF8; border: 1px solid #E5E2DC; border-radius: 10px; padding: 13px 14px; margin-bottom: 8px; }
+  .rt-return-trip-card:last-child { margin-bottom: 0; }
+  .rt-return-trip-route { font-size: 13px; font-weight: 600; color: #1A1A18; display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .rt-return-trip-route svg { width: 13px; height: 13px; color: #1D9E75; }
+  .rt-return-trip-meta { font-size: 11px; color: #5F5E5A; margin-bottom: 8px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .rt-return-trip-footer { display: flex; align-items: center; justify-content: space-between; }
+  .rt-return-trip-price { font-size: 16px; font-weight: 700; color: #0F6E56; }
+  .rt-return-trip-permile { font-size: 10px; color: #8C8A84; margin-top: 1px; }
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-thumb { background: #D8D5CD; border-radius: 3px; }
 </style>
@@ -418,11 +426,15 @@
               <div class="rt-match-avatar-sm rider">CM</div>
               <div><div class="rt-match-name">Carlos M.</div><div class="rt-match-rating">★ 4.8</div></div>
             </div>
-            <div class="rt-price-tag earned">+$140</div>
+            <div class="rt-price-tag earned">+$275</div>
           </div>
           <div class="rt-card-actions">
             <button class="rt-btn-sm outline" onclick="showToast('Opening chat with Carlos')">Message rider</button>
             <button class="rt-btn-sm outline" onclick="showToast('Opening trip details')">View details</button>
+            <button class="rt-btn-sm green" onclick="openReturnFare()">
+              <svg style="width:12px;height:12px;vertical-align:-1px;margin-right:4px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+              Find return fare
+            </button>
           </div>
         </div>
       </div>
@@ -552,6 +564,19 @@
 
 <div id="toast" class="rt-toast"></div>
 
+<!-- Return fare modal -->
+<div class="rt-modal-overlay" id="return-fare-overlay">
+  <div class="rt-modal" style="max-width:480px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div class="rt-modal-title">Find a return fare</div>
+      <button onclick="closeReturnFare()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#8C8A84;">×</button>
+    </div>
+    <div class="rt-modal-sub">Trips near Orlando heading back toward South Florida. Estimated arrival: ~11:00 AM today.</div>
+    <div id="return-trips-list"></div>
+    <button class="rt-btn-secondary" onclick="closeReturnFare()" style="width:100%;margin-top:12px;">Close</button>
+  </div>
+</div>
+
 <script>
 let modalStarVal = 0;
 let availOn = true;
@@ -669,6 +694,49 @@ function showToast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+const returnTrips = [
+  { id:'r1', pickup:'Orlando, FL', destination:'Miami, FL', date:'Today', time:'1:00 PM', passengers:1, luggage:'1 bag', price:280, perMile:'$1.19/mi', rider:'Ana V.', posted:'45m ago' },
+  { id:'r2', pickup:'Orlando, FL', destination:'Fort Lauderdale, FL', date:'Today', time:'2:30 PM', passengers:2, luggage:'2 bags', price:265, perMile:'$1.13/mi', rider:'Marco T.', posted:'1h ago' },
+  { id:'r3', pickup:'Orlando, FL', destination:'Doral, FL', date:'Today', time:'12:00 PM', passengers:1, luggage:'None', price:295, perMile:'$1.28/mi', rider:'Lisa K.', posted:'2h ago', returnTrip:true, returnPrice:260 },
+  { id:'r4', pickup:'Kissimmee, FL', destination:'Miami, FL', date:'Tomorrow', time:'8:00 AM', passengers:3, luggage:'3+ bags', price:310, perMile:'$1.23/mi', rider:'James P.', posted:'3h ago' },
+];
+
+function openReturnFare() {
+  const list = document.getElementById('return-trips-list');
+  list.innerHTML = returnTrips.map(t => `
+    <div class="rt-return-trip-card">
+      <div class="rt-return-trip-route">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        ${t.pickup}
+        <svg style="width:11px;height:11px;color:#8C8A84;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        ${t.destination}
+        ${t.returnTrip ? `<span style="font-size:10px;padding:1px 6px;border-radius:999px;background:#EAF1FB;border:1px solid #8AB4E8;color:#2E5A94;font-weight:600;margin-left:4px;">Round trip</span>` : ''}
+      </div>
+      <div class="rt-return-trip-meta">
+        <span>${t.date} · ${t.time}</span>
+        <span>${t.passengers} pax · ${t.luggage}</span>
+        <span>Posted ${t.posted}</span>
+      </div>
+      <div class="rt-return-trip-footer">
+        <div>
+          <div class="rt-return-trip-price">+$${t.price}${t.returnTrip ? ` + $${t.returnPrice} return` : ''}</div>
+          <div class="rt-return-trip-permile">${t.perMile} · by ${t.rider}</div>
+        </div>
+        <button class="rt-btn-sm green" onclick="claimReturn('${t.id}', ${t.price})">Bid on this</button>
+      </div>
+    </div>`).join('');
+  document.getElementById('return-fare-overlay').classList.add('show');
+}
+
+function claimReturn(id, price) {
+  document.getElementById('return-fare-overlay').classList.remove('show');
+  showToast(`Bid submitted on return fare — rider will be notified.`);
+}
+
+function closeReturnFare() {
+  document.getElementById('return-fare-overlay').classList.remove('show');
 }
 </script>
 </body>
