@@ -456,11 +456,11 @@ function toggleCardBreakdown(id, miles, price) {
 }
 
 const sampleTrips = [
-  {id:1,pickup:"Miami, FL",destination:"Orlando, FL",date:"Jun 18",time:"7:00 AM",passengers:2,luggage:"2 bags",vehiclePref:"sedan",price:140,prefs:["No smoking","AC required"],notes:"Early morning preferred.",rider:"Carlos M.",posted:"2h ago",urgent:false,maxWait:null,driverVehicle:"2023 Hyundai Sonata",driverVehicleClass:"sedan"},
-  {id:2,pickup:"Fort Lauderdale, FL",destination:"Tampa, FL",date:"Jun 19",time:"9:30 AM",passengers:1,luggage:"1 bag",vehiclePref:"any",price:110,prefs:["Quiet ride"],notes:"",rider:"Priya S.",posted:"4h ago",urgent:false,maxWait:null,driverVehicle:"2022 Toyota Camry",driverVehicleClass:"sedan"},
-  {id:3,pickup:"Miami, FL",destination:"Jacksonville, FL",date:"Jun 20",time:"6:00 AM",passengers:3,luggage:"3+ bags",vehiclePref:"largesuv",price:230,prefs:["Stops OK","Oversized luggage"],notes:"Family trip, need extra trunk space.",rider:"David R.",posted:"5h ago",urgent:false,maxWait:null,driverVehicle:"2021 Kia Sedona",driverVehicleClass:"largesuv"},
-  {id:4,pickup:"Doral, FL",destination:"Orlando, FL",date:"Today",time:"Now",passengers:1,luggage:"1 bag",vehiclePref:"any",price:160,prefs:["AC required"],notes:"Flight connection, need to leave ASAP.",rider:"James T.",posted:"8m ago",urgent:true,maxWait:"30 min",driverVehicle:"2023 Honda Accord",driverVehicleClass:"sedan"},
-  {id:5,pickup:"Boca Raton, FL",destination:"Key West, FL",date:"Jun 22",time:"8:00 AM",passengers:2,luggage:"2 bags",vehiclePref:"midsuv",price:175,prefs:["No smoking","No pets"],notes:"Headed to a wedding.",rider:"Monica L.",posted:"1h ago",urgent:false,maxWait:null,driverVehicle:"2022 Toyota RAV4",driverVehicleClass:"midsuv"}
+  {id:1,pickup:"Miami, FL",destination:"Orlando, FL",date:"Jun 18",time:"7:00 AM",passengers:2,luggage:"2 bags",vehiclePref:"sedan",price:275,prefs:["No smoking","AC required"],notes:"Early morning preferred.",rider:"Carlos M.",posted:"2h ago",urgent:false,maxWait:null,driverVehicle:"2023 Hyundai Sonata",driverVehicleClass:"sedan"},
+  {id:2,pickup:"Fort Lauderdale, FL",destination:"Tampa, FL",date:"Jun 19",time:"9:30 AM",passengers:1,luggage:"1 bag",vehiclePref:"any",price:295,prefs:["Quiet ride"],notes:"",rider:"Priya S.",posted:"4h ago",urgent:false,maxWait:null,driverVehicle:"2022 Toyota Camry",driverVehicleClass:"sedan"},
+  {id:3,pickup:"Miami, FL",destination:"Jacksonville, FL",date:"Jun 20",time:"6:00 AM",passengers:3,luggage:"3+ bags",vehiclePref:"largesuv",price:420,prefs:["Stops OK","Oversized luggage"],notes:"Family trip, need extra trunk space.",rider:"David R.",posted:"5h ago",urgent:false,maxWait:null,driverVehicle:"2021 Kia Sedona",driverVehicleClass:"largesuv"},
+  {id:4,pickup:"Doral, FL",destination:"Orlando, FL",date:"Today",time:"Now",passengers:1,luggage:"1 bag",vehiclePref:"any",price:290,prefs:["AC required"],notes:"Flight connection, need to leave ASAP.",rider:"James T.",posted:"8m ago",urgent:true,maxWait:"30 min",driverVehicle:"2023 Honda Accord",driverVehicleClass:"sedan"},
+  {id:5,pickup:"Boca Raton, FL",destination:"Key West, FL",date:"Jun 22",time:"8:00 AM",passengers:2,luggage:"2 bags",vehiclePref:"midsuv",price:235,prefs:["No smoking","No pets"],notes:"Headed to a wedding.",rider:"Monica L.",posted:"1h ago",urgent:false,maxWait:null,driverVehicle:"2022 Toyota RAV4",driverVehicleClass:"midsuv"}
 ];
 
 function renderTrips(containerId, showBid) {
@@ -474,17 +474,14 @@ function renderTrips(containerId, showBid) {
     // Rider card footer
     let footerSub = "rider's offered price", footerSubColor = '#8C8A84';
 
-    // Driver card footer — Uber payout comparison
+    // Driver card footer — $/mile earned vs Uber driver payout per mile
     let driverFooterSub = '', driverFooterColor = '#8C8A84';
-    if (fares && showBid) {
-      const advantage = t.price - fares.uberDriverPayout;
-      if (advantage > 0) {
-        driverFooterSub = `Est. $${advantage} more than ${fares.uberLabel} driver payout`;
-        driverFooterColor = '#0F6E56';
-      } else {
-        driverFooterSub = `Similar to ${fares.uberLabel} driver payout`;
-        driverFooterColor = '#8C8A84';
-      }
+    if (fares && showBid && dist) {
+      const driverPerMile = (t.price / dist).toFixed(2);
+      const uberPerMile = (fares.uberDriverPayout / dist).toFixed(2);
+      const diff = (driverPerMile - uberPerMile).toFixed(2);
+      driverFooterSub = `$${driverPerMile}/mi · $${diff} more/mi than ${fares.uberLabel}`;
+      driverFooterColor = diff > 0 ? '#0F6E56' : '#8C8A84';
     }
 
     const prefLabel = VEHICLE_PREF_LABELS[t.vehiclePref] || 'No preference';
@@ -513,7 +510,7 @@ function renderTrips(containerId, showBid) {
           <div class="rt-price-badge">$${t.price}</div>
           ${showBid
             ? `<div class="rt-price-sub" style="color:${driverFooterColor};">${driverFooterSub}</div>
-               ${fares?`<div style="font-size:10px;color:#B5B2AA;margin-top:2px;">Uber rider fare est: $${fares.uber} · Driver payout est: $${fares.uberDriverPayout}</div>`:''}`
+               ${fares&&dist?`<div style="font-size:10px;color:#B5B2AA;margin-top:2px;">Uber rider fare est: $${fares.uber} · Uber driver est: $${(fares.uberDriverPayout/dist).toFixed(2)}/mi</div>`:''}`
             : `<div class="rt-price-sub" style="color:${footerSubColor};">rider's offered price</div>`
           }
         </div>
