@@ -128,7 +128,31 @@
   .rt-btn-message:hover { opacity: 0.88; }
   .rt-btn-message svg { width: 15px; height: 15px; }
 
-  .rt-cancel-link {
+  .rt-return-prompt {
+    background: #EAF1FB; border: 1px solid #8AB4E8; border-radius: 12px;
+    padding: 14px 16px; margin-bottom: 16px;
+  }
+  .rt-return-prompt-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+  .rt-return-prompt-header svg { width: 18px; height: 18px; color: #2E5A94; flex-shrink: 0; margin-top: 2px; }
+  .rt-return-prompt-title { font-size: 13px; font-weight: 600; color: #1A1A18; margin-bottom: 2px; }
+  .rt-return-prompt-sub { font-size: 12px; color: #2E5A94; font-weight: 500; }
+  .rt-return-prompt-note { font-size: 11.5px; color: #5F5E5A; line-height: 1.5; margin-bottom: 10px; }
+  .rt-return-timer { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: #7A6420; background: #FAF7EF; border: 1px solid #E8DDB8; border-radius: 7px; padding: 6px 10px; margin-bottom: 10px; }
+  .rt-return-timer svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .rt-return-actions { display: flex; gap: 8px; }
+  .rt-btn-return-decline { flex: 1; padding: 10px; border-radius: 9px; background: white; color: #5F5E5A; border: 1px solid #D8D5CD; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+  .rt-btn-return-decline:hover { background: #F7F6F3; }
+  .rt-btn-return-accept { flex: 1; padding: 10px; border-radius: 9px; background: #5B8FD9; color: white; border: none; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; transition: opacity 0.15s; }
+  .rt-btn-return-accept:hover { opacity: 0.88; }
+  .rt-return-confirmed { background: #E1F5EE; border: 1px solid #5DCAA5; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; display: none; }
+  .rt-return-confirmed.show { display: block; }
+  .rt-return-confirmed-title { font-size: 13px; font-weight: 600; color: #085041; margin-bottom: 2px; }
+  .rt-return-confirmed-sub { font-size: 12px; color: #0F6E56; }
+  .rt-return-cancel-link {
+    display: block; text-align: center; width: 100%; margin-top: 18px;
+    font-size: 13px; color: #B5483B; cursor: pointer; background: none; border: none;
+    font-family: inherit; padding: 8px;
+  }
     display: block; text-align: center; width: 100%; margin-top: 18px;
     font-size: 13px; color: #B5483B; cursor: pointer; background: none; border: none;
     font-family: inherit; padding: 8px;
@@ -372,6 +396,25 @@
         </div>
       </div>
 
+      <div class="rt-return-prompt" id="return-prompt">
+        <div class="rt-return-prompt-header">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+          <div>
+            <div class="rt-return-prompt-title">This rider also needs a return trip</div>
+            <div class="rt-return-prompt-sub">Orlando, FL → Doral, FL · Jun 18 · 6:00 PM · $275</div>
+          </div>
+        </div>
+        <div class="rt-return-prompt-note">You have first right of refusal. If you decline, it posts automatically to the marketplace.</div>
+        <div class="rt-return-timer" id="return-timer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Offer expires in <span id="timer-val">29:47</span>
+        </div>
+        <div class="rt-return-actions">
+          <button class="rt-btn-return-decline" onclick="declineReturn()">Pass — post it to market</button>
+          <button class="rt-btn-return-accept" onclick="acceptReturn()">Accept return — $275</button>
+        </div>
+      </div>
+
       <div class="rt-action-row">
         <button class="rt-btn-message" onclick="showToast('Opening message thread with Carlos')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -407,6 +450,57 @@ function switchView(view) {
   document.getElementById('tab-' + view).classList.add('active');
   document.getElementById(view + '-view').classList.add('active');
 }
+
+// Return leg countdown timer (30 min = 1800 seconds)
+let timerSeconds = 1787;
+let timerInterval = null;
+
+function startReturnTimer() {
+  timerInterval = setInterval(() => {
+    timerSeconds--;
+    if (timerSeconds <= 0) {
+      clearInterval(timerInterval);
+      declineReturn(true);
+      return;
+    }
+    const m = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+    const s = (timerSeconds % 60).toString().padStart(2, '0');
+    const el = document.getElementById('timer-val');
+    if (el) el.textContent = `${m}:${s}`;
+  }, 1000);
+}
+
+function acceptReturn() {
+  clearInterval(timerInterval);
+  document.getElementById('return-prompt').style.display = 'none';
+  // Show confirmed state
+  const confirmed = document.createElement('div');
+  confirmed.className = 'rt-return-confirmed show';
+  confirmed.innerHTML = `<div class="rt-return-confirmed-title">✓ Return trip confirmed</div>
+    <div class="rt-return-confirmed-sub">Orlando → Doral · Jun 18 · 6:00 PM · $275 — Carlos will be notified.</div>`;
+  document.getElementById('return-prompt').insertAdjacentElement('afterend', confirmed);
+  showToast('Return trip accepted — Carlos has been notified.');
+}
+
+function declineReturn(expired = false) {
+  clearInterval(timerInterval);
+  document.getElementById('return-prompt').style.display = 'none';
+  const msg = expired
+    ? 'Offer expired — return trip posted to the marketplace automatically.'
+    : 'Return trip passed — posted to the marketplace. Carlos will be notified.';
+  // Show declined state
+  const declined = document.createElement('div');
+  declined.style.cssText = 'background:#FAFAF8;border:1px solid #E5E2DC;border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:#5F5E5A;line-height:1.5;';
+  declined.innerHTML = `<strong style="color:#1A1A18;">Return trip posted to marketplace</strong><br>Orlando → Doral · Jun 18 · 6:00 PM · $275 — open for other drivers to bid on.`;
+  document.getElementById('return-prompt').insertAdjacentElement('afterend', declined);
+  showToast(msg);
+}
+
+// Start timer when driver view loads
+document.addEventListener('DOMContentLoaded', () => {
+  // Only start if we're on driver view
+  if (document.getElementById('return-prompt')) startReturnTimer();
+});
 
 function openCancel(as) {
   cancelingAs = as;
