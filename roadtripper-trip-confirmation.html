@@ -158,6 +158,12 @@
     font-family: inherit; padding: 8px;
   }
   .rt-cancel-link:hover { text-decoration: underline; }
+  .rt-cancel-policy {
+    display: flex; align-items: flex-start; gap: 8px; font-size: 11px; color: #5F5E5A;
+    line-height: 1.5; padding: 10px 14px; background: #FAFAF8; border: 1px solid #E5E2DC;
+    border-radius: 9px; margin-top: 16px;
+  }
+  .rt-cancel-policy svg { width: 13px; height: 13px; flex-shrink: 0; margin-top: 1px; color: #8C8A84; }
 
   .rt-cancel-modal-overlay {
     display: none; position: fixed; inset: 0; background: rgba(26,26,24,0.45);
@@ -295,6 +301,10 @@
         </button>
       </div>
 
+      <div class="rt-cancel-policy">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <div><strong>Cancellation policy:</strong> Free 24+ hrs before pickup · 25% fee within 24 hrs · 50% fee if driver is en route</div>
+      </div>
       <button class="rt-cancel-link" onclick="openCancel('rider')">Cancel this trip</button>
     </div>
 
@@ -322,8 +332,8 @@
       <div class="rt-status-banner">
         <div class="rt-status-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
         <div>
-          <div class="rt-status-text">Trip tentatively confirmed</div>
-          <div class="rt-status-sub">Conditional on return leg being matched by Jun 18 · 9:00 AM</div>
+          <div class="rt-status-text">Trip confirmed</div>
+          <div class="rt-status-sub">You accepted this trip at the rider's posted price</div>
         </div>
       </div>
 
@@ -422,6 +432,10 @@
         </button>
       </div>
 
+      <div class="rt-cancel-policy">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <div><strong>Cancellation policy:</strong> Free 24+ hrs before pickup · Fee applies within 24 hrs · Higher fee if already en route — affects your profile rating</div>
+      </div>
       <button class="rt-cancel-link" onclick="openCancel('driver')">Cancel this trip</button>
     </div>
 

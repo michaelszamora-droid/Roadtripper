@@ -287,7 +287,7 @@
 
         <div class="rt-return-options" id="return-options">
           <div style="font-size:11px;color:#2E5A94;margin-bottom:10px;line-height:1.5;">
-            The return fare matches your outbound price. Each leg is separate — the driver can take one or both.
+            The return fare matches your outbound price. Each leg is a separate confirmed trip — the driver can take one or both independently.
           </div>
           <div class="rt-price-row">
             <div class="rt-form-group">
@@ -299,23 +299,11 @@
               <input type="time" id="return-time" />
             </div>
           </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;background:white;border:1px solid #8AB4E8;border-radius:8px;padding:10px 12px;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;background:white;border:1px solid #8AB4E8;border-radius:8px;padding:10px 12px;margin-bottom:6px;">
             <div style="font-size:12px;color:#2E5A94;font-weight:500;">Return fare (auto-matched)</div>
             <div style="font-size:15px;font-weight:700;color:#2E5A94;" id="return-fare-display">—</div>
           </div>
-          <div style="font-size:11px;font-weight:600;color:#5F5E5A;margin-bottom:6px;">I need my return confirmed by</div>
-          <div class="rt-price-row" style="margin-bottom:6px;">
-            <div class="rt-form-group">
-              <input type="date" id="confirm-by-date" />
-            </div>
-            <div class="rt-form-group">
-              <input type="time" id="confirm-by-time" />
-            </div>
-          </div>
-          <div style="font-size:11px;color:#8C8A84;margin-bottom:8px;line-height:1.5;">If no return driver is confirmed by this time, both legs cancel automatically — no penalty to you or the driver.</div>
-          <div style="font-size:11px;background:#FAF7EF;border:1px solid #E8DDB8;border-radius:8px;padding:8px 10px;color:#7A6420;line-height:1.5;">
-            The outbound driver will see this deadline and know the booking is conditional on a return match.
-          </div>
+          <div style="font-size:11px;color:#8C8A84;line-height:1.5;">The outbound driver gets first right of refusal on the return. If they pass, the return leg posts to the marketplace automatically.</div>
         </div>
 
         <button class="rt-btn-primary" id="post-btn" onclick="postTrip()">
@@ -527,7 +515,7 @@ const sampleTrips = [
   {id:3,pickup:"Miami, FL",destination:"Jacksonville, FL",date:"Jun 20",time:"6:00 AM",passengers:3,luggage:"3+ bags",vehiclePref:"largesuv",price:420,prefs:["Stops OK","Oversized luggage"],notes:"Family trip, need extra trunk space.",rider:"David R.",posted:"5h ago",urgent:false,maxWait:null,driverVehicle:"2021 Kia Sedona",driverVehicleClass:"largesuv"},
   {id:4,pickup:"Doral, FL",destination:"Orlando, FL",date:"Today",time:"Now",passengers:1,luggage:"1 bag",vehiclePref:"any",price:290,prefs:["AC required"],notes:"Flight connection, need to leave ASAP.",rider:"James T.",posted:"8m ago",urgent:true,maxWait:"30 min",driverVehicle:"2023 Honda Accord",driverVehicleClass:"sedan"},
   {id:5,pickup:"Boca Raton, FL",destination:"Key West, FL",date:"Jun 22",time:"8:00 AM",passengers:2,luggage:"2 bags",vehiclePref:"midsuv",price:235,prefs:["No smoking","No pets"],notes:"Headed to a wedding.",rider:"Monica L.",posted:"1h ago",urgent:false,maxWait:null,driverVehicle:"2022 Toyota RAV4",driverVehicleClass:"midsuv",returnTrip:null},
-  {id:6,pickup:"Miami, FL",destination:"Tampa, FL",date:"Jun 21",time:"8:00 AM",passengers:2,luggage:"2 bags",vehiclePref:"sedan",price:285,prefs:["AC required"],notes:"Day trip, will need return same evening.",rider:"Sofia R.",posted:"3h ago",urgent:false,maxWait:null,driverVehicle:null,driverVehicleClass:"sedan",returnTrip:{date:"Jun 21",time:"6:00 PM",price:285,confirmBy:{date:"Jun 21",time:"10:00 AM"}}}
+  {id:6,pickup:"Miami, FL",destination:"Tampa, FL",date:"Jun 21",time:"8:00 AM",passengers:2,luggage:"2 bags",vehiclePref:"sedan",price:285,prefs:["AC required"],notes:"Day trip, will need return same evening.",rider:"Sofia R.",posted:"3h ago",urgent:false,maxWait:null,driverVehicle:null,driverVehicleClass:"sedan",returnTrip:{date:"Jun 21",time:"6:00 PM",price:285}}
 ];
 
 function renderTrips(containerId, showBid) {
@@ -574,7 +562,7 @@ function renderTrips(containerId, showBid) {
       ${t.notes?`<div style="font-size:12px;color:#5F5E5A;margin-bottom:8px;font-style:italic;">"${t.notes}"</div>`:''}
       ${t.returnTrip?`<div class="rt-return-badge">
         <svg style="width:10px;height:10px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-        Round trip · Return ${t.returnTrip.date}${t.returnTrip.time !== 'TBD' ? ' · '+t.returnTrip.time : ''} · $${t.returnTrip.price} · ${showBid ? `Conditional — confirm return by ${t.returnTrip.confirmBy ? t.returnTrip.confirmBy.date+' '+t.returnTrip.confirmBy.time : 'TBD'}` : 'Return leg included'}
+        Round trip · Return ${t.returnTrip.date}${t.returnTrip.time !== 'TBD' ? ' · '+t.returnTrip.time : ''} · $${t.returnTrip.price}
       </div>`:''}
       <div class="rt-trip-footer">
         <div>
@@ -656,11 +644,7 @@ function postTrip() {
     returnTrip: hasReturn ? {
       date: document.getElementById('return-date').value || 'TBD',
       time: document.getElementById('return-time').value || 'TBD',
-      price: returnPrice,
-      confirmBy: {
-        date: document.getElementById('confirm-by-date').value || 'TBD',
-        time: document.getElementById('confirm-by-time').value || 'TBD'
-      }
+      price: returnPrice
     } : null
   };
   sampleTrips.unshift(newTrip);
@@ -678,8 +662,6 @@ function postTrip() {
   if (hasReturn) {
     document.getElementById('return-date').value = '';
     document.getElementById('return-time').value = '';
-    document.getElementById('confirm-by-date').value = '';
-    document.getElementById('confirm-by-time').value = '';
     const display = document.getElementById('return-fare-display');
     if (display) display.textContent = '—';
     toggleReturn();
