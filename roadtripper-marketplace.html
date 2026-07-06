@@ -38,6 +38,16 @@
   /* Urgent toggle */
   .rt-urgent-toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 9px; border: 1px solid #E5E2DC; background: #FAFAF8; margin-bottom: 12px; cursor: pointer; transition: all 0.15s; user-select: none; }
   .rt-urgent-toggle-row.on { background: #FAECE7; border-color: #F0997B; }
+  .rt-return-toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 9px; border: 1px solid #E5E2DC; background: #FAFAF8; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; user-select: none; }
+  .rt-return-toggle-row.on { background: #EAF1FB; border-color: #8AB4E8; }
+  .rt-return-toggle-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #1A1A18; pointer-events: none; }
+  .rt-toggle-switch-blue { width: 32px; height: 18px; border-radius: 9px; background: #D8D5CD; position: relative; flex-shrink: 0; pointer-events: none; transition: background 0.2s; }
+  .rt-toggle-switch-blue.on { background: #5B8FD9; }
+  .rt-toggle-switch-blue .rt-toggle-knob { width: 14px; height: 14px; border-radius: 50%; background: white; position: absolute; top: 2px; left: 2px; transition: left 0.2s; }
+  .rt-toggle-switch-blue.on .rt-toggle-knob { left: 16px; }
+  .rt-return-options { background: #EAF1FB; border: 1px solid #8AB4E8; border-radius: 9px; padding: 12px; margin-bottom: 12px; display: none; }
+  .rt-return-options.show { display: block; }
+  .rt-return-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; padding: 2px 8px; border-radius: 999px; background: #EAF1FB; border: 1px solid #8AB4E8; color: #2E5A94; font-weight: 600; margin-bottom: 8px; }
   .rt-urgent-toggle-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #1A1A18; pointer-events: none; }
   .rt-urgent-toggle-label svg { width: 16px; height: 16px; color: #D85A30; }
   .rt-toggle-switch { width: 32px; height: 18px; border-radius: 9px; background: #D8D5CD; position: relative; flex-shrink: 0; pointer-events: none; transition: background 0.2s; }
@@ -261,9 +271,41 @@
           <div class="rt-breakdown-panel" id="rider-breakdown-panel">
             <div class="rt-breakdown-title">Estimated driver costs per trip</div>
             <div id="rider-breakdown-rows"></div>
-            <div class="rt-breakdown-note">* National averages. Return trip costs not included.</div>
+            <div class="rt-breakdown-note">* National averages. One-way trip costs.</div>
           </div>
           <div class="rt-compare-disclaimer">* Uber/Lyft estimates use Florida UberX rates (~$1.40/mi + $0.35/min). Typical accepted fare based on $0.95–$1.05/mi. Distances approximated from known Florida city pairs.</div>
+        </div>
+
+        <hr class="rt-divider" />
+        <div class="rt-return-toggle-row" id="return-toggle-row" onclick="toggleReturn()">
+          <div class="rt-return-toggle-label">
+            <svg style="width:16px;height:16px;color:#5B8FD9;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+            <span>I also need a <strong>return trip</strong></span>
+          </div>
+          <div class="rt-toggle-switch-blue" id="return-switch"><div class="rt-toggle-knob"></div></div>
+        </div>
+
+        <div class="rt-return-options" id="return-options">
+          <div style="font-size:11px;color:#2E5A94;margin-bottom:10px;line-height:1.5;">
+            Each leg is a separate fare. The driver can accept both or just one.
+          </div>
+          <div class="rt-price-row">
+            <div class="rt-form-group">
+              <label>Return date</label>
+              <input type="date" id="return-date" />
+            </div>
+            <div class="rt-form-group">
+              <label>Return time</label>
+              <input type="time" id="return-time" />
+            </div>
+          </div>
+          <div class="rt-form-group">
+            <label>Return fare offered</label>
+            <input type="number" id="return-price" placeholder="Enter amount in $" min="0" />
+          </div>
+          <div style="font-size:11px;color:#8C8A84;margin-top:-6px;margin-bottom:4px;">
+            This is a separate fare from your outbound price above.
+          </div>
         </div>
 
         <button class="rt-btn-primary" id="post-btn" onclick="postTrip()">
@@ -340,7 +382,14 @@ const DISTANCES = {
 };
 
 const selectedPrefs = new Set();
-let isUrgent = false, maxWait = '30 min', activeBid = null, riderBreakdownOpen = false, currentMiles = null;
+let isUrgent = false, maxWait = '30 min', activeBid = null, riderBreakdownOpen = false, currentMiles = null, hasReturn = false;
+
+function toggleReturn() {
+  hasReturn = !hasReturn;
+  document.getElementById('return-switch').classList.toggle('on', hasReturn);
+  document.getElementById('return-toggle-row').classList.toggle('on', hasReturn);
+  document.getElementById('return-options').classList.toggle('show', hasReturn);
+}
 
 // Uber rate tiers by vehicle class (Florida, 2025 avg per mile)
 const UBER_RATES = {
@@ -460,7 +509,8 @@ const sampleTrips = [
   {id:2,pickup:"Fort Lauderdale, FL",destination:"Tampa, FL",date:"Jun 19",time:"9:30 AM",passengers:1,luggage:"1 bag",vehiclePref:"any",price:295,prefs:["Quiet ride"],notes:"",rider:"Priya S.",posted:"4h ago",urgent:false,maxWait:null,driverVehicle:"2022 Toyota Camry",driverVehicleClass:"sedan"},
   {id:3,pickup:"Miami, FL",destination:"Jacksonville, FL",date:"Jun 20",time:"6:00 AM",passengers:3,luggage:"3+ bags",vehiclePref:"largesuv",price:420,prefs:["Stops OK","Oversized luggage"],notes:"Family trip, need extra trunk space.",rider:"David R.",posted:"5h ago",urgent:false,maxWait:null,driverVehicle:"2021 Kia Sedona",driverVehicleClass:"largesuv"},
   {id:4,pickup:"Doral, FL",destination:"Orlando, FL",date:"Today",time:"Now",passengers:1,luggage:"1 bag",vehiclePref:"any",price:290,prefs:["AC required"],notes:"Flight connection, need to leave ASAP.",rider:"James T.",posted:"8m ago",urgent:true,maxWait:"30 min",driverVehicle:"2023 Honda Accord",driverVehicleClass:"sedan"},
-  {id:5,pickup:"Boca Raton, FL",destination:"Key West, FL",date:"Jun 22",time:"8:00 AM",passengers:2,luggage:"2 bags",vehiclePref:"midsuv",price:235,prefs:["No smoking","No pets"],notes:"Headed to a wedding.",rider:"Monica L.",posted:"1h ago",urgent:false,maxWait:null,driverVehicle:"2022 Toyota RAV4",driverVehicleClass:"midsuv"}
+  {id:5,pickup:"Boca Raton, FL",destination:"Key West, FL",date:"Jun 22",time:"8:00 AM",passengers:2,luggage:"2 bags",vehiclePref:"midsuv",price:235,prefs:["No smoking","No pets"],notes:"Headed to a wedding.",rider:"Monica L.",posted:"1h ago",urgent:false,maxWait:null,driverVehicle:"2022 Toyota RAV4",driverVehicleClass:"midsuv",returnTrip:null},
+  {id:6,pickup:"Miami, FL",destination:"Tampa, FL",date:"Jun 21",time:"8:00 AM",passengers:2,luggage:"2 bags",vehiclePref:"sedan",price:285,prefs:["AC required"],notes:"Day trip, will need return same evening.",rider:"Sofia R.",posted:"3h ago",urgent:false,maxWait:null,driverVehicle:null,driverVehicleClass:"sedan",returnTrip:{date:"Jun 21",time:"6:00 PM",price:265}}
 ];
 
 function renderTrips(containerId, showBid) {
@@ -505,6 +555,10 @@ function renderTrips(containerId, showBid) {
       ${showBid&&t.driverVehicle?`<div style="font-size:12px;color:#5F5E5A;margin-bottom:8px;display:flex;align-items:center;gap:5px;"><svg style="width:13px;height:13px;color:#1D9E75;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><path d="M3 16a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2H3v-2z"/><circle cx="7" cy="17.5" r="1.2"/><circle cx="17" cy="17.5" r="1.2"/></svg>${t.driverVehicle}</div>`:''}
       ${t.prefs.length?`<div class="rt-pref-tags">${t.prefs.map(p=>`<span class="rt-pref-tag">${p}</span>`).join('')}</div>`:''}
       ${t.notes?`<div style="font-size:12px;color:#5F5E5A;margin-bottom:8px;font-style:italic;">"${t.notes}"</div>`:''}
+      ${t.returnTrip?`<div class="rt-return-badge">
+        <svg style="width:10px;height:10px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        Round trip · Return ${t.returnTrip.date}${t.returnTrip.time !== 'TBD' ? ' · '+t.returnTrip.time : ''} · $${t.returnTrip.price} return fare
+      </div>`:''}
       <div class="rt-trip-footer">
         <div>
           <div class="rt-price-badge">$${t.price}</div>
@@ -570,6 +624,8 @@ function postTrip() {
   const dest = document.getElementById('destination').value.trim();
   const price = document.getElementById('offered-price').value;
   if (!pickup || !dest || !price) { showToast('Fill in pickup, destination, and your price.'); return; }
+  const returnPrice = hasReturn ? parseInt(document.getElementById('return-price').value) || 0 : null;
+  if (hasReturn && !returnPrice) { showToast('Enter a return fare or turn off the return trip toggle.'); return; }
   const newTrip = {
     id: sampleTrips.length+1, pickup, destination: dest,
     date: isUrgent ? 'Today' : (document.getElementById('trip-date').value||'TBD'),
@@ -579,7 +635,12 @@ function postTrip() {
     vehiclePref: document.getElementById('vehicle-pref').value,
     price: parseInt(price), prefs: [...selectedPrefs],
     notes: document.getElementById('trip-notes').value,
-    rider: 'You', posted: 'just now', urgent: isUrgent, maxWait: isUrgent ? maxWait : null
+    rider: 'You', posted: 'just now', urgent: isUrgent, maxWait: isUrgent ? maxWait : null,
+    returnTrip: hasReturn ? {
+      date: document.getElementById('return-date').value || 'TBD',
+      time: document.getElementById('return-time').value || 'TBD',
+      price: returnPrice
+    } : null
   };
   sampleTrips.unshift(newTrip);
   renderTrips('rider-trips-list', false);
@@ -593,6 +654,12 @@ function postTrip() {
   selectedPrefs.clear();
   document.querySelectorAll('.rt-pref-btn').forEach(b => b.classList.remove('on'));
   if (isUrgent) toggleUrgent();
+  if (hasReturn) {
+    document.getElementById('return-price').value = '';
+    document.getElementById('return-date').value = '';
+    document.getElementById('return-time').value = '';
+    toggleReturn();
+  }
 }
 
 function openResponse(id, price, urgent, mode, vehicle) {
