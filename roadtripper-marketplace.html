@@ -255,7 +255,7 @@
         <hr class="rt-divider" />
         <div class="rt-section-label">Your offered price</div>
         <div class="rt-form-group">
-          <input type="number" id="offered-price" placeholder="Enter amount in $" min="0" oninput="updateEstimate()" />
+          <input type="number" id="offered-price" placeholder="Enter amount in $" min="0" oninput="updateEstimate(); updateReturnFareDisplay()" />
         </div>
 
         <div id="compare-box" style="display:none;" class="rt-compare-box">
@@ -287,7 +287,7 @@
 
         <div class="rt-return-options" id="return-options">
           <div style="font-size:11px;color:#2E5A94;margin-bottom:10px;line-height:1.5;">
-            Each leg is a separate fare. The driver can accept both or just one.
+            The return fare is set to match your outbound price. Each leg is a separate trip — the driver can accept one or both.
           </div>
           <div class="rt-price-row">
             <div class="rt-form-group">
@@ -299,13 +299,11 @@
               <input type="time" id="return-time" />
             </div>
           </div>
-          <div class="rt-form-group">
-            <label>Return fare offered</label>
-            <input type="number" id="return-price" placeholder="Enter amount in $" min="0" />
+          <div style="display:flex;align-items:center;justify-content:space-between;background:white;border:1px solid #8AB4E8;border-radius:8px;padding:10px 12px;margin-bottom:4px;">
+            <div style="font-size:12px;color:#2E5A94;font-weight:500;">Return fare (auto-matched)</div>
+            <div style="font-size:15px;font-weight:700;color:#2E5A94;" id="return-fare-display">—</div>
           </div>
-          <div style="font-size:11px;color:#8C8A84;margin-top:-6px;margin-bottom:4px;">
-            This is a separate fare from your outbound price above.
-          </div>
+          <div style="font-size:11px;color:#8C8A84;margin-bottom:4px;">Drivers may counter-bid on either leg independently.</div>
         </div>
 
         <button class="rt-btn-primary" id="post-btn" onclick="postTrip()">
@@ -389,6 +387,13 @@ function toggleReturn() {
   document.getElementById('return-switch').classList.toggle('on', hasReturn);
   document.getElementById('return-toggle-row').classList.toggle('on', hasReturn);
   document.getElementById('return-options').classList.toggle('show', hasReturn);
+  if (hasReturn) updateReturnFareDisplay();
+}
+
+function updateReturnFareDisplay() {
+  const price = document.getElementById('offered-price').value;
+  const display = document.getElementById('return-fare-display');
+  if (display) display.textContent = price ? '$' + price : '—';
 }
 
 // Uber rate tiers by vehicle class (Florida, 2025 avg per mile)
@@ -510,7 +515,7 @@ const sampleTrips = [
   {id:3,pickup:"Miami, FL",destination:"Jacksonville, FL",date:"Jun 20",time:"6:00 AM",passengers:3,luggage:"3+ bags",vehiclePref:"largesuv",price:420,prefs:["Stops OK","Oversized luggage"],notes:"Family trip, need extra trunk space.",rider:"David R.",posted:"5h ago",urgent:false,maxWait:null,driverVehicle:"2021 Kia Sedona",driverVehicleClass:"largesuv"},
   {id:4,pickup:"Doral, FL",destination:"Orlando, FL",date:"Today",time:"Now",passengers:1,luggage:"1 bag",vehiclePref:"any",price:290,prefs:["AC required"],notes:"Flight connection, need to leave ASAP.",rider:"James T.",posted:"8m ago",urgent:true,maxWait:"30 min",driverVehicle:"2023 Honda Accord",driverVehicleClass:"sedan"},
   {id:5,pickup:"Boca Raton, FL",destination:"Key West, FL",date:"Jun 22",time:"8:00 AM",passengers:2,luggage:"2 bags",vehiclePref:"midsuv",price:235,prefs:["No smoking","No pets"],notes:"Headed to a wedding.",rider:"Monica L.",posted:"1h ago",urgent:false,maxWait:null,driverVehicle:"2022 Toyota RAV4",driverVehicleClass:"midsuv",returnTrip:null},
-  {id:6,pickup:"Miami, FL",destination:"Tampa, FL",date:"Jun 21",time:"8:00 AM",passengers:2,luggage:"2 bags",vehiclePref:"sedan",price:285,prefs:["AC required"],notes:"Day trip, will need return same evening.",rider:"Sofia R.",posted:"3h ago",urgent:false,maxWait:null,driverVehicle:null,driverVehicleClass:"sedan",returnTrip:{date:"Jun 21",time:"6:00 PM",price:265}}
+  {id:6,pickup:"Miami, FL",destination:"Tampa, FL",date:"Jun 21",time:"8:00 AM",passengers:2,luggage:"2 bags",vehiclePref:"sedan",price:285,prefs:["AC required"],notes:"Day trip, will need return same evening.",rider:"Sofia R.",posted:"3h ago",urgent:false,maxWait:null,driverVehicle:null,driverVehicleClass:"sedan",returnTrip:{date:"Jun 21",time:"6:00 PM",price:285}}
 ];
 
 function renderTrips(containerId, showBid) {
@@ -624,8 +629,8 @@ function postTrip() {
   const dest = document.getElementById('destination').value.trim();
   const price = document.getElementById('offered-price').value;
   if (!pickup || !dest || !price) { showToast('Fill in pickup, destination, and your price.'); return; }
-  const returnPrice = hasReturn ? parseInt(document.getElementById('return-price').value) || 0 : null;
-  if (hasReturn && !returnPrice) { showToast('Enter a return fare or turn off the return trip toggle.'); return; }
+  const returnPrice = hasReturn ? parseInt(price) : null;
+  if (hasReturn && !returnPrice) { showToast('Enter your outbound price first — the return fare will match it.'); return; }
   const newTrip = {
     id: sampleTrips.length+1, pickup, destination: dest,
     date: isUrgent ? 'Today' : (document.getElementById('trip-date').value||'TBD'),
@@ -655,9 +660,10 @@ function postTrip() {
   document.querySelectorAll('.rt-pref-btn').forEach(b => b.classList.remove('on'));
   if (isUrgent) toggleUrgent();
   if (hasReturn) {
-    document.getElementById('return-price').value = '';
     document.getElementById('return-date').value = '';
     document.getElementById('return-time').value = '';
+    const display = document.getElementById('return-fare-display');
+    if (display) display.textContent = '—';
     toggleReturn();
   }
 }
