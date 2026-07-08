@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roadtripper</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #1A1A18; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* Top bar */
+  #top-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #FFFFFF; border-bottom: 1px solid #E5E2DC; flex-shrink: 0; min-height: 52px; }
+  #back-btn { display: none; align-items: center; gap: 6px; font-size: 13px; color: #1D9E75; font-weight: 600; cursor: pointer; border: none; background: none; font-family: inherit; padding: 4px 0; }
+  #back-btn svg { width: 16px; height: 16px; }
+  #top-logo { font-size: 18px; font-weight: 600; color: #1A1A18; letter-spacing: -0.3px; }
+  #top-logo span { color: #1D9E75; }
+  #top-right { display: flex; align-items: center; gap: 10px; }
+  #notif-btn { display: none; position: relative; cursor: pointer; background: none; border: none; padding: 4px; }
+  #notif-btn svg { width: 20px; height: 20px; color: #5F5E5A; }
+  #notif-badge { position: absolute; top: 0; right: 0; width: 8px; height: 8px; background: #D85A30; border-radius: 50%; border: 1.5px solid white; }
+  #screen-title { font-size: 13px; font-weight: 600; color: #8C8A84; }
+
+  /* Screen container */
+  #screen-frame { flex: 1; width: 100%; border: none; background: #F7F6F3; }
+
+  /* Bottom nav */
+  #bottom-nav { display: none; flex-shrink: 0; background: #FFFFFF; border-top: 1px solid #E5E2DC; padding: 6px 0 max(6px, env(safe-area-inset-bottom)); }
+  .nav-items { display: flex; justify-content: space-around; }
+  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 4px 16px; border: none; background: none; font-family: inherit; min-width: 60px; }
+  .nav-item svg { width: 22px; height: 22px; color: #B5B2AA; transition: color 0.15s; }
+  .nav-item span { font-size: 10px; color: #B5B2AA; font-weight: 500; transition: color 0.15s; }
+  .nav-item.active svg { color: #1D9E75; }
+  .nav-item.active span { color: #1D9E75; font-weight: 700; }
+
+  /* Login/signup entry screen */
+  #entry-screen { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 24px; background: #F7F6F3; }
+  #entry-screen.hidden { display: none; }
+  .entry-logo { font-size: 32px; font-weight: 700; color: #1A1A18; letter-spacing: -1px; margin-bottom: 6px; }
+  .entry-logo span { color: #1D9E75; }
+  .entry-tagline { font-size: 14px; color: #5F5E5A; margin-bottom: 40px; text-align: center; line-height: 1.5; }
+  .entry-role-label { font-size: 12px; font-weight: 600; color: #8C8A84; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 14px; }
+  .entry-btn { width: 100%; max-width: 320px; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; margin-bottom: 12px; transition: opacity 0.15s; border: none; display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .entry-btn svg { width: 18px; height: 18px; }
+  .entry-btn.rider { background: #1D9E75; color: #04342C; }
+  .entry-btn.driver { background: #1A1A18; color: #F7F6F3; }
+  .entry-btn:hover { opacity: 0.88; }
+  .entry-divider { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 320px; margin: 8px 0 20px; }
+  .entry-divider-line { flex: 1; height: 1px; background: #E5E2DC; }
+  .entry-divider-text { font-size: 11px; color: #B5B2AA; }
+  .entry-existing { font-size: 13px; color: #5F5E5A; text-align: center; }
+  .entry-existing a { color: #1D9E75; font-weight: 600; cursor: pointer; text-decoration: none; }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div id="top-bar">
+  <button id="back-btn" onclick="goBack()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+    Back
+  </button>
+  <div id="top-logo">road<span>tripper</span></div>
+  <div id="top-right">
+    <span id="screen-title"></span>
+    <button id="notif-btn" onclick="navigate('notifications')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <div id="notif-badge"></div>
+    </button>
+  </div>
+</div>
+
+<!-- Entry / role selection screen -->
+<div id="entry-screen">
+  <div class="entry-logo">road<span>tripper</span></div>
+  <div class="entry-tagline">Long-distance rides across Florida.<br>Set your price. Find your driver.</div>
+  <div class="entry-role-label">Get started as a</div>
+  <button class="entry-btn rider" onclick="enterApp('rider')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+    I need a ride
+  </button>
+  <button class="entry-btn driver" onclick="enterApp('driver')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><path d="M3 16a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2H3v-2z"/><circle cx="7" cy="17.5" r="1.2"/><circle cx="17" cy="17.5" r="1.2"/></svg>
+    I'm a driver
+  </button>
+  <div class="entry-divider">
+    <div class="entry-divider-line"></div>
+    <div class="entry-divider-text">already have an account?</div>
+    <div class="entry-divider-line"></div>
+  </div>
+  <div class="entry-existing"><a onclick="enterApp('rider')">Log in</a></div>
+</div>
+
+<!-- Screen iframe -->
+<iframe id="screen-frame" class="hidden" style="display:none;"></iframe>
+
+<!-- Bottom nav -->
+<div id="bottom-nav">
+  <div class="nav-items">
+    <button class="nav-item active" id="nav-home" onclick="navigate('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="nav-item" id="nav-trips" onclick="navigate('trips')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      <span id="nav-trips-label">Trips</span>
+    </button>
+    <button class="nav-item" id="nav-messages" onclick="navigate('messages')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>Messages</span>
+    </button>
+    <button class="nav-item" id="nav-profile" onclick="navigate('profile')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Profile</span>
+    </button>
+    <button class="nav-item" id="nav-notifications" onclick="navigate('notifications')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span>Alerts</span>
+    </button>
+  </div>
+</div>
+
+<script>
+let currentRole = null; // 'rider' or 'driver'
+let currentScreen = null;
+let history = [];
+
+const SCREENS = {
+  rider: {
+    home:          { file: 'roadtripper-dashboard.html',      title: 'My Trips',      tab: 'home' },
+    trips:         { file: 'roadtripper-marketplace.html',    title: 'Post a Trip',   tab: 'trips' },
+    messages:      { file: 'roadtripper-messages.html',       title: 'Messages',      tab: 'messages' },
+    profile:       { file: 'roadtripper-profiles.html',       title: 'My Profile',    tab: 'profile' },
+    notifications: { file: 'roadtripper-notifications.html',  title: 'Notifications', tab: 'notifications' },
+    confirmation:  { file: 'roadtripper-trip-confirmation.html', title: 'Trip Details', tab: null },
+  },
+  driver: {
+    home:          { file: 'roadtripper-marketplace.html',    title: 'Browse Trips',  tab: 'home' },
+    trips:         { file: 'roadtripper-dashboard.html',      title: 'My Trips',      tab: 'trips' },
+    messages:      { file: 'roadtripper-messages.html',       title: 'Messages',      tab: 'messages' },
+    profile:       { file: 'roadtripper-profiles.html',       title: 'My Profile',    tab: 'profile' },
+    notifications: { file: 'roadtripper-notifications.html',  title: 'Notifications', tab: 'notifications' },
+    confirmation:  { file: 'roadtripper-trip-confirmation.html', title: 'Trip Details', tab: null },
+  }
+};
+
+function enterApp(role) {
+  currentRole = role;
+  document.getElementById('entry-screen').style.display = 'none';
+  document.getElementById('bottom-nav').style.display = 'block';
+  document.getElementById('notif-btn').style.display = 'flex';
+
+  // Update trips label based on role
+  document.getElementById('nav-trips-label').textContent = role === 'rider' ? 'Post' : 'My Trips';
+
+  navigate('home');
+}
+
+function navigate(screenKey) {
+  if (!currentRole) return;
+  const screen = SCREENS[currentRole][screenKey];
+  if (!screen) return;
+
+  // Track history for back button
+  if (currentScreen && currentScreen !== screenKey) {
+    history.push(currentScreen);
+  }
+  currentScreen = screenKey;
+
+  // Update iframe
+  const frame = document.getElementById('screen-frame');
+  frame.style.display = 'block';
+  frame.src = screen.file;
+
+  // Screen title
+  document.getElementById('screen-title').textContent = '';
+
+  // Back button — show if we have history and it's not a tab screen
+  const hasHistory = history.length > 0;
+  const backBtn = document.getElementById('back-btn');
+  const logo = document.getElementById('top-logo');
+  if (hasHistory && screen.tab === null) {
+    backBtn.style.display = 'flex';
+    logo.style.display = 'none';
+  } else {
+    backBtn.style.display = 'none';
+    logo.style.display = 'block';
+    history = []; // clear history when on a main tab
+  }
+
+  // Update bottom nav active state
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  if (screen.tab) {
+    const navEl = document.getElementById('nav-' + screen.tab);
+    if (navEl) navEl.classList.add('active');
+  }
+}
+
+function goBack() {
+  if (history.length > 0) {
+    const prev = history.pop();
+    currentScreen = null; // prevent re-pushing
+    navigate(prev);
+  }
+}
+
+// Auto-switch role-specific tabs on screens that support it
+document.getElementById('screen-frame').addEventListener('load', function() {
+  try {
+    const doc = this.contentDocument || this.contentWindow.document;
+    if (!doc) return;
+
+    // Auto-switch marketplace to driver tab when driver is browsing
+    if (currentRole === 'driver' && currentScreen === 'home') {
+      const driverTab = doc.getElementById('tab-driver');
+      if (driverTab) driverTab.click();
+    }
+
+    // Auto-switch dashboard to rider tab when rider is viewing
+    if (currentRole === 'rider' && currentScreen === 'trips') {
+      // dashboard defaults to rider already
+    }
+
+    // Auto-switch notifications to correct role
+    const roleBtn = doc.getElementById('btn-' + currentRole);
+    if (roleBtn) roleBtn.click();
+
+    // Wire internal navigation buttons to parent navigator
+    wireInternalLinks(doc);
+
+  } catch(e) {
+    // Cross-origin or other issues — safe to ignore in prototype
+  }
+});
+
+function wireInternalLinks(doc) {
+  // Map internal button text/actions to navigation keys
+  const linkMap = [
+    { selector: '.rt-post-trip-btn', screen: 'trips' },
+    { selector: '.rt-btn-message', screen: 'messages' },
+    { selector: '[onclick*="message thread"]', screen: 'messages' },
+    { selector: '[onclick*="Opening chat"]', screen: 'messages' },
+    { selector: '[onclick*="trip details"]', screen: 'confirmation' },
+    { selector: '[onclick*="bid review"]', screen: 'home' },
+    { selector: '[onclick*="confirmation"]', screen: 'confirmation' },
+  ];
+
+  linkMap.forEach(({ selector, screen }) => {
+    try {
+      doc.querySelectorAll(selector).forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          navigate(screen);
+        });
+      });
+    } catch(e) {}
+  });
+}
+</script>
+</body>
+</html>
