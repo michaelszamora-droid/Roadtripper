@@ -511,12 +511,12 @@ function toggleCardBreakdown(id, miles, price) {
 }
 
 const sampleTrips = [
-  {id:1,pickup:"Miami, FL",destination:"Orlando, FL",date:"Jun 18",time:"7:00 AM",passengers:2,luggage:"2 bags",vehiclePref:"sedan",price:275,prefs:["No smoking","AC required"],notes:"Early morning preferred.",rider:"Carlos M.",posted:"2h ago",urgent:false,maxWait:null,driverVehicle:"2023 Hyundai Sonata",driverVehicleClass:"sedan"},
-  {id:2,pickup:"Fort Lauderdale, FL",destination:"Tampa, FL",date:"Jun 19",time:"9:30 AM",passengers:1,luggage:"1 bag",vehiclePref:"any",price:295,prefs:["Quiet ride"],notes:"",rider:"Priya S.",posted:"4h ago",urgent:false,maxWait:null,driverVehicle:"2022 Toyota Camry",driverVehicleClass:"sedan"},
-  {id:3,pickup:"Miami, FL",destination:"Jacksonville, FL",date:"Jun 20",time:"6:00 AM",passengers:3,luggage:"3+ bags",vehiclePref:"largesuv",price:420,prefs:["Stops OK","Oversized luggage"],notes:"Family trip, need extra trunk space.",rider:"David R.",posted:"5h ago",urgent:false,maxWait:null,driverVehicle:"2021 Kia Sedona",driverVehicleClass:"largesuv"},
-  {id:4,pickup:"Doral, FL",destination:"Orlando, FL",date:"Today",time:"Now",passengers:1,luggage:"1 bag",vehiclePref:"any",price:290,prefs:["AC required"],notes:"Flight connection, need to leave ASAP.",rider:"James T.",posted:"8m ago",urgent:true,maxWait:"30 min",driverVehicle:"2023 Honda Accord",driverVehicleClass:"sedan"},
-  {id:5,pickup:"Boca Raton, FL",destination:"Key West, FL",date:"Jun 22",time:"8:00 AM",passengers:2,luggage:"2 bags",vehiclePref:"midsuv",price:235,prefs:["No smoking","No pets"],notes:"Headed to a wedding.",rider:"Monica L.",posted:"1h ago",urgent:false,maxWait:null,driverVehicle:"2022 Toyota RAV4",driverVehicleClass:"midsuv",returnTrip:null},
-  {id:6,pickup:"Miami, FL",destination:"Tampa, FL",date:"Jun 21",time:"8:00 AM",passengers:2,luggage:"2 bags",vehiclePref:"sedan",price:285,prefs:["AC required"],notes:"Day trip, will need return same evening.",rider:"Sofia R.",posted:"3h ago",urgent:false,maxWait:null,driverVehicle:null,driverVehicleClass:"sedan",returnTrip:{date:"Jun 21",time:"6:00 PM",price:285}}
+  {id:1,pickup:"Miami, FL",destination:"Orlando, FL",date:"Jun 18",time:"7:00 AM",passengers:2,luggage:"2 bags",vehiclePref:"sedan",price:275,prefs:["No smoking","AC required"],notes:"Early morning preferred.",rider:"Carlos M.",posted:"2h ago",urgent:false,maxWait:null},
+  {id:2,pickup:"Fort Lauderdale, FL",destination:"Tampa, FL",date:"Jun 19",time:"9:30 AM",passengers:1,luggage:"1 bag",vehiclePref:"any",price:295,prefs:["Quiet ride"],notes:"",rider:"Priya S.",posted:"4h ago",urgent:false,maxWait:null},
+  {id:3,pickup:"Miami, FL",destination:"Jacksonville, FL",date:"Jun 20",time:"6:00 AM",passengers:3,luggage:"3+ bags",vehiclePref:"largesuv",price:420,prefs:["Stops OK","Oversized luggage"],notes:"Family trip, need extra trunk space.",rider:"David R.",posted:"5h ago",urgent:false,maxWait:null},
+  {id:4,pickup:"Doral, FL",destination:"Orlando, FL",date:"Today",time:"Now",passengers:1,luggage:"1 bag",vehiclePref:"any",price:290,prefs:["AC required"],notes:"Flight connection, need to leave ASAP.",rider:"James T.",posted:"8m ago",urgent:true,maxWait:"30 min"},
+  {id:5,pickup:"Boca Raton, FL",destination:"Key West, FL",date:"Jun 22",time:"8:00 AM",passengers:2,luggage:"2 bags",vehiclePref:"midsuv",price:235,prefs:["No smoking","No pets"],notes:"Headed to a wedding.",rider:"Monica L.",posted:"1h ago",urgent:false,maxWait:null,returnTrip:null},
+  {id:6,pickup:"Miami, FL",destination:"Tampa, FL",date:"Jun 21",time:"8:00 AM",passengers:2,luggage:"2 bags",vehiclePref:"sedan",price:285,prefs:["AC required"],notes:"Day trip, will need return same evening.",rider:"Sofia R.",posted:"3h ago",urgent:false,maxWait:null,returnTrip:{date:"Jun 21",time:"6:00 PM",price:285}}
 ];
 
 // Vehicle class compatibility — which driver classes satisfy rider preferences
@@ -594,7 +594,6 @@ function renderTrips(containerId, showBid) {
         ${showVehiclePref?`<span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><path d="M3 16a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2H3v-2z"/><circle cx="7" cy="17.5" r="1.2"/><circle cx="17" cy="17.5" r="1.2"/></svg>${prefLabel}</span>`:''}
         <span class="rt-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${t.posted}</span>
       </div>
-      ${showBid&&t.driverVehicle?`<div style="font-size:12px;color:#5F5E5A;margin-bottom:8px;display:flex;align-items:center;gap:5px;"><svg style="width:13px;height:13px;color:#1D9E75;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><path d="M3 16a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2H3v-2z"/><circle cx="7" cy="17.5" r="1.2"/><circle cx="17" cy="17.5" r="1.2"/></svg>${t.driverVehicle}</div>`:''}
       ${t.prefs.length?`<div class="rt-pref-tags">${t.prefs.map(p=>`<span class="rt-pref-tag">${p}</span>`).join('')}</div>`:''}
       ${t.notes?`<div style="font-size:12px;color:#5F5E5A;margin-bottom:8px;font-style:italic;">"${t.notes}"</div>`:''}
       ${t.returnTrip?`<div class="rt-return-badge">
@@ -612,8 +611,8 @@ function renderTrips(containerId, showBid) {
         </div>
         <div class="rt-action-row">
           ${showBid
-            ? `<button class="rt-btn-bid" onclick="openResponse(${t.id},${t.price},${t.urgent},'bid','${t.driverVehicle||''}')">Counter bid</button>
-               <button class="rt-btn-accept" onclick="openResponse(${t.id},${t.price},${t.urgent},'accept','${t.driverVehicle||''}')">Accept $${t.price}</button>`
+            ? `<button class="rt-btn-bid" onclick="openResponse(${t.id},${t.price},${t.urgent},'bid')">Counter bid</button>
+               <button class="rt-btn-accept" onclick="openResponse(${t.id},${t.price},${t.urgent},'accept')">Accept $${t.price}</button>`
             : `<span style="font-size:11px;padding:3px 9px;border-radius:999px;background:#E1F5EE;color:#085041;border:1px solid #5DCAA5;">${t.rider}</span>`
           }
         </div>
@@ -705,7 +704,7 @@ function postTrip() {
   }
 }
 
-function openResponse(id, price, urgent, mode, vehicle) {
+function openResponse(id, price, urgent, mode) {
   if (activeBid && activeBid !== id) { const prev = document.getElementById('resp-panel-'+activeBid); if (prev) prev.style.display = 'none'; }
   const panel = document.getElementById('resp-panel-'+id);
   const inner = document.getElementById('resp-panel-inner-'+id);
@@ -713,11 +712,9 @@ function openResponse(id, price, urgent, mode, vehicle) {
   if (isSame) { panel.style.display = 'none'; activeBid = null; return; }
   panel.dataset.mode = mode; activeBid = id;
   const urgentWarn = urgent ? `<div class="rt-urgent-warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Rider's max wait. Only respond if you can meet this.</div>` : '';
-  const vehicleTag = vehicle ? `<div style="font-size:11px;color:#0F6E56;display:flex;align-items:center;gap:5px;margin-bottom:10px;"><svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><path d="M3 16a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2H3v-2z"/><circle cx="7" cy="17.5" r="1.2"/><circle cx="17" cy="17.5" r="1.2"/></svg>Your vehicle: ${vehicle}</div>` : '';
   if (mode === 'accept') {
     panel.classList.add('accept-mode');
     inner.innerHTML = `<div style="font-size:13px;font-weight:600;color:#085041;margin-bottom:10px;display:flex;align-items:center;gap:6px;"><svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Accepting this trip</div>
-      ${vehicleTag}
       <div class="rt-locked-price">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         <div><div class="rt-locked-price-label">Price locked at rider's offer</div></div>
@@ -731,7 +728,6 @@ function openResponse(id, price, urgent, mode, vehicle) {
   } else {
     panel.classList.remove('accept-mode');
     inner.innerHTML = `<div style="font-size:13px;font-weight:600;color:#1A1A18;margin-bottom:10px;">Submit a counter bid</div>
-      ${vehicleTag}
       <div class="rt-bid-fields">
         <div><div class="rt-bid-field-label">Your price</div><div class="rt-bid-input-wrap"><span>$</span><input type="number" id="bid-input-${id}" placeholder="${price}" min="1" /></div></div>
         <div><div class="rt-bid-field-label">Your ETA <span style="color:#D85A30;">*required</span></div><div class="rt-bid-input-wrap"><input type="text" id="eta-input-${id}" placeholder="e.g. 20 min" /></div></div>
