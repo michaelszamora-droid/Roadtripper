@@ -167,6 +167,10 @@
   .rt-cost-toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 10px; }
   .rt-cost-toggle-label { font-size: 13px; color: #1A1A18; font-weight: 500; }
   .rt-cost-toggle-desc { font-size: 11px; color: #8C8A84; line-height: 1.5; }
+  .rt-return-pref-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .rt-return-pref-btn { padding: 9px 8px; border-radius: 9px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; border: 1.5px solid #E5E2DC; background: #FAFAF8; color: #5F5E5A; transition: all 0.15s; text-align: center; }
+  .rt-return-pref-btn:hover { border-color: #D8D5CD; background: #F2F1ED; }
+  .rt-return-pref-btn.active { background: #E1F5EE; border-color: #5DCAA5; color: #085041; }
   .rt-toggle-switch {
     width: 32px; height: 18px; border-radius: 9px; background: #5DCAA5;
     position: relative; flex-shrink: 0; cursor: pointer; transition: background 0.2s;
@@ -358,6 +362,20 @@
         <div class="rt-avail-row">
           <div class="rt-avail-label"><span class="rt-avail-pulse"></span> Available now</div>
           <div class="rt-avail-eta">Can reach Doral area in ~15 min</div>
+        </div>
+      </div>
+
+      <div class="rt-section">
+        <div class="rt-section-label">Return trip preferences</div>
+        <div class="rt-card">
+          <div style="font-size:12px;color:#5F5E5A;margin-bottom:12px;line-height:1.5;">When you tap "Find return fare," how far out should we show available trips?</div>
+          <div class="rt-return-pref-options" id="return-pref-options">
+            <button class="rt-return-pref-btn active" data-days="0" onclick="setReturnPref(this, 0)">Same day only</button>
+            <button class="rt-return-pref-btn" data-days="1" onclick="setReturnPref(this, 1)">Within 1 day</button>
+            <button class="rt-return-pref-btn" data-days="2" onclick="setReturnPref(this, 2)">Within 2 days</button>
+            <button class="rt-return-pref-btn" data-days="3" onclick="setReturnPref(this, 3)">Within 3 days</button>
+          </div>
+          <div style="font-size:11px;color:#8C8A84;margin-top:10px;line-height:1.5;">You can always adjust this on the fly when browsing return fares.</div>
         </div>
       </div>
 
@@ -578,6 +596,27 @@ function switchProfile(view) {
   document.getElementById('tab-' + view).classList.add('active');
   document.getElementById(view + '-view').classList.add('active');
 }
+
+function setReturnPref(btn, days) {
+  document.querySelectorAll('.rt-return-pref-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // Store in sessionStorage so dashboard can read it
+  sessionStorage.setItem('rt_return_pref_days', days);
+  const labels = ['Same day only', 'Within 1 day', 'Within 2 days', 'Within 3 days'];
+  showToast('Return preference saved: ' + labels[days]);
+}
+
+// Load saved preference on page load
+document.addEventListener('DOMContentLoaded', () => {
+  const saved = sessionStorage.getItem('rt_return_pref_days');
+  if (saved !== null) {
+    const btn = document.querySelector(`.rt-return-pref-btn[data-days="${saved}"]`);
+    if (btn) {
+      document.querySelectorAll('.rt-return-pref-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+  }
+});
 
 function toggleCost() {
   document.getElementById('cost-toggle').classList.toggle('off');

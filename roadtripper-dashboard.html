@@ -139,6 +139,8 @@
   .rt-return-trip-footer { display: flex; align-items: center; justify-content: space-between; }
   .rt-return-trip-price { font-size: 16px; font-weight: 700; color: #0F6E56; }
   .rt-return-trip-permile { font-size: 10px; color: #8C8A84; margin-top: 1px; }
+  .rt-return-filter-btn { padding: 5px 12px; border-radius: 999px; font-size: 12px; border: 1px solid #E5E2DC; color: #5F5E5A; cursor: pointer; background: transparent; transition: all 0.15s; font-family: inherit; }
+  .rt-return-filter-btn.active { background: #E1F5EE; border-color: #5DCAA5; color: #085041; font-weight: 600; }
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-thumb { background: #D8D5CD; border-radius: 3px; }
 </style>
@@ -571,7 +573,14 @@
       <div class="rt-modal-title">Find a return fare</div>
       <button onclick="closeReturnFare()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#8C8A84;">×</button>
     </div>
-    <div class="rt-modal-sub">Trips near Orlando heading back toward South Florida. Estimated arrival: ~11:00 AM today.</div>
+    <div class="rt-modal-sub">Trips near Orlando heading back toward South Florida.</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+      <button class="rt-return-filter-btn active" data-days="0" onclick="renderReturnTrips(0)">Same day</button>
+      <button class="rt-return-filter-btn" data-days="1" onclick="renderReturnTrips(1)">+1 day</button>
+      <button class="rt-return-filter-btn" data-days="2" onclick="renderReturnTrips(2)">+2 days</button>
+      <button class="rt-return-filter-btn" data-days="3" onclick="renderReturnTrips(3)">+3 days</button>
+    </div>
+    <div style="font-size:11px;color:#8C8A84;margin-bottom:10px;" id="return-filter-label">Same day · 3 trips available</div>
     <div id="return-trips-list"></div>
     <button class="rt-btn-secondary" onclick="closeReturnFare()" style="width:100%;margin-top:12px;">Close</button>
   </div>
@@ -697,15 +706,42 @@ function showToast(msg) {
 }
 
 const returnTrips = [
-  { id:'r1', pickup:'Orlando, FL', destination:'Miami, FL', date:'Today', time:'1:00 PM', passengers:1, luggage:'1 bag', price:280, perMile:'$1.19/mi', rider:'Ana V.', posted:'45m ago' },
-  { id:'r2', pickup:'Orlando, FL', destination:'Fort Lauderdale, FL', date:'Today', time:'2:30 PM', passengers:2, luggage:'2 bags', price:265, perMile:'$1.13/mi', rider:'Marco T.', posted:'1h ago' },
-  { id:'r3', pickup:'Orlando, FL', destination:'Doral, FL', date:'Today', time:'12:00 PM', passengers:1, luggage:'None', price:295, perMile:'$1.28/mi', rider:'Lisa K.', posted:'2h ago', returnTrip:true, returnPrice:260 },
-  { id:'r4', pickup:'Kissimmee, FL', destination:'Miami, FL', date:'Tomorrow', time:'8:00 AM', passengers:3, luggage:'3+ bags', price:310, perMile:'$1.23/mi', rider:'James P.', posted:'3h ago' },
+  { id:'r1', pickup:'Orlando, FL', destination:'Miami, FL', date:'Today', time:'1:00 PM', passengers:1, luggage:'1 bag', price:280, perMile:'$1.19/mi', rider:'Ana V.', posted:'45m ago', daysOut:0, sortTime:1300 },
+  { id:'r2', pickup:'Orlando, FL', destination:'Fort Lauderdale, FL', date:'Today', time:'2:30 PM', passengers:2, luggage:'2 bags', price:265, perMile:'$1.13/mi', rider:'Marco T.', posted:'1h ago', daysOut:0, sortTime:1430 },
+  { id:'r3', pickup:'Orlando, FL', destination:'Doral, FL', date:'Today', time:'12:00 PM', passengers:1, luggage:'None', price:295, perMile:'$1.28/mi', rider:'Lisa K.', posted:'2h ago', daysOut:0, sortTime:1200, returnTrip:true, returnPrice:260 },
+  { id:'r4', pickup:'Kissimmee, FL', destination:'Miami, FL', date:'Tomorrow', time:'8:00 AM', passengers:3, luggage:'3+ bags', price:310, perMile:'$1.23/mi', rider:'James P.', posted:'3h ago', daysOut:1, sortTime:800 },
+  { id:'r5', pickup:'Orlando, FL', destination:'Boca Raton, FL', date:'In 2 days', time:'10:00 AM', passengers:1, luggage:'1 bag', price:255, perMile:'$1.08/mi', rider:'Carmen R.', posted:'5h ago', daysOut:2, sortTime:1000 },
+  { id:'r6', pickup:'Orlando, FL', destination:'Miami, FL', date:'In 3 days', time:'9:00 AM', passengers:2, luggage:'2 bags', price:285, perMile:'$1.21/mi', rider:'Tony M.', posted:'1h ago', daysOut:3, sortTime:900 },
 ];
 
 function openReturnFare() {
+  // Read driver's saved preference (default: same day = 0)
+  const prefDays = parseInt(sessionStorage.getItem('rt_return_pref_days') ?? '0');
+  renderReturnTrips(prefDays);
+  document.getElementById('return-fare-overlay').classList.add('show');
+}
+
+function renderReturnTrips(days) {
+  const labels = ['Same day', 'Within 1 day', 'Within 2 days', 'Within 3 days'];
+  const filtered = returnTrips.filter(t => t.daysOut <= days);
+
+  // Update the filter chips
+  document.querySelectorAll('.rt-return-filter-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.days) === days);
+  });
+
+  // Update header
+  document.getElementById('return-filter-label').textContent = labels[days] + ' · ' + filtered.length + ' trip' + (filtered.length !== 1 ? 's' : '') + ' available';
+
   const list = document.getElementById('return-trips-list');
-  list.innerHTML = returnTrips.map(t => `
+  if (filtered.length === 0) {
+    list.innerHTML = `<div style="text-align:center;padding:24px;color:#B5B2AA;font-size:13px;">No return trips available for this window.<br><span style="font-size:11px;">Try expanding your search above.</span></div>`;
+    return;
+  }
+
+  list.innerHTML = filtered
+    .sort((a, b) => a.daysOut - b.daysOut || a.sortTime - b.sortTime)
+    .map(t => `
     <div class="rt-return-trip-card">
       <div class="rt-return-trip-route">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -727,7 +763,6 @@ function openReturnFare() {
         <button class="rt-btn-sm green" onclick="claimReturn('${t.id}', ${t.price})">Bid on this</button>
       </div>
     </div>`).join('');
-  document.getElementById('return-fare-overlay').classList.add('show');
 }
 
 function claimReturn(id, price) {
