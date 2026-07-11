@@ -159,6 +159,11 @@
   .rt-card-breakdown.show { display: block; }
   .rt-urgent-warn { font-size: 11px; color: #993C1D; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
   .rt-urgent-warn svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .rt-fatigue-indicator { display: flex; align-items: flex-start; gap: 7px; font-size: 11px; line-height: 1.5; padding: 8px 10px; border-radius: 8px; margin-bottom: 10px; }
+  .rt-fatigue-indicator svg { width: 13px; height: 13px; flex-shrink: 0; margin-top: 1px; }
+  .rt-fatigue-indicator.green { background: #E1F5EE; color: #085041; }
+  .rt-fatigue-indicator.yellow { background: #FAF7EF; color: #7A6420; }
+  .rt-fatigue-indicator.red { background: #FAECE7; color: #993C1D; }
 
   .rt-view { display: none; }
   .rt-view.active { display: block; }
@@ -704,6 +709,41 @@ function postTrip() {
   }
 }
 
+// Simulated driver hours logged today (in real app, pulled from trip history)
+const DRIVER_HOURS = {
+  1: 0,    // Carlos's trip — no prior driving today
+  2: 3.5,  // Priya's trip — 3.5 hrs logged (return trip)
+  3: 6.2,  // David's trip — 6+ hrs logged
+  4: 1.5,  // James's trip — light driving
+  5: 0,
+  6: 4.8
+};
+
+function getFatigueIndicator(tripId) {
+  const hours = DRIVER_HOURS[tripId] || 0;
+  if (hours === 0) {
+    return `<div class="rt-fatigue-indicator green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <span>No prior trips logged today — fresh driver</span>
+    </div>`;
+  } else if (hours < 4) {
+    return `<div class="rt-fatigue-indicator green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span>Driver has logged ~${hours} hrs today — within normal range</span>
+    </div>`;
+  } else if (hours < 6) {
+    return `<div class="rt-fatigue-indicator yellow">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span><strong>This is a return trip.</strong> Driver has already logged ~${hours} hrs today. Use your judgment.</span>
+    </div>`;
+  } else {
+    return `<div class="rt-fatigue-indicator red">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span><strong>High fatigue risk.</strong> Driver has logged ~${hours} hrs today. Consider requesting a different driver.</span>
+    </div>`;
+  }
+}
+
 function openResponse(id, price, urgent, mode) {
   if (activeBid && activeBid !== id) { const prev = document.getElementById('resp-panel-'+activeBid); if (prev) prev.style.display = 'none'; }
   const panel = document.getElementById('resp-panel-'+id);
@@ -712,9 +752,11 @@ function openResponse(id, price, urgent, mode) {
   if (isSame) { panel.style.display = 'none'; activeBid = null; return; }
   panel.dataset.mode = mode; activeBid = id;
   const urgentWarn = urgent ? `<div class="rt-urgent-warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Rider's max wait. Only respond if you can meet this.</div>` : '';
+  const fatigueTag = getFatigueIndicator(id);
   if (mode === 'accept') {
     panel.classList.add('accept-mode');
     inner.innerHTML = `<div style="font-size:13px;font-weight:600;color:#085041;margin-bottom:10px;display:flex;align-items:center;gap:6px;"><svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Accepting this trip</div>
+      ${fatigueTag}
       <div class="rt-locked-price">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         <div><div class="rt-locked-price-label">Price locked at rider's offer</div></div>
@@ -728,6 +770,7 @@ function openResponse(id, price, urgent, mode) {
   } else {
     panel.classList.remove('accept-mode');
     inner.innerHTML = `<div style="font-size:13px;font-weight:600;color:#1A1A18;margin-bottom:10px;">Submit a counter bid</div>
+      ${fatigueTag}
       <div class="rt-bid-fields">
         <div><div class="rt-bid-field-label">Your price</div><div class="rt-bid-input-wrap"><span>$</span><input type="number" id="bid-input-${id}" placeholder="${price}" min="1" /></div></div>
         <div><div class="rt-bid-field-label">Your ETA <span style="color:#D85A30;">*required</span></div><div class="rt-bid-input-wrap"><input type="text" id="eta-input-${id}" placeholder="e.g. 20 min" /></div></div>
