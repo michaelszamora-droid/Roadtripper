@@ -622,6 +622,7 @@ function renderTrips(containerId, showBid) {
           }
         </div>
       </div>
+      ${!showBid ? getFatigueIndicator(t.id) : ''}
       ${showBid&&dist?`<button class="rt-card-breakdown-link" id="card-bd-link-${t.id}" onclick="toggleCardBreakdown(${t.id},${dist},${t.price})">
         <svg style="width:11px;height:11px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
         See cost breakdown</button>
@@ -709,37 +710,41 @@ function postTrip() {
   }
 }
 
-// Simulated driver hours logged today (in real app, pulled from trip history)
-const DRIVER_HOURS = {
-  1: 0,    // Carlos's trip — no prior driving today
-  2: 3.5,  // Priya's trip — 3.5 hrs logged (return trip)
-  3: 6.2,  // David's trip — 6+ hrs logged
-  4: 1.5,  // James's trip — light driving
-  5: 0,
-  6: 4.8
+// Simulated driver activity today (in real app, pulled from trip history)
+const DRIVER_ACTIVITY = {
+  1: { hours: 0,   restHrs: null,  label: 'No prior trips today' },
+  2: { hours: 3.5, restHrs: 4.0,   label: 'Miami → Orlando · 3.5 hrs' },
+  3: { hours: 6.2, restHrs: 0.75,  label: 'Miami → Jacksonville · 6.2 hrs' },
+  4: { hours: 1.5, restHrs: 2.5,   label: 'Doral → Miami · 1.5 hrs' },
+  5: { hours: 0,   restHrs: null,  label: 'No prior trips today' },
+  6: { hours: 4.8, restHrs: 1.2,   label: 'Miami → Tampa · 4.8 hrs' },
 };
 
 function getFatigueIndicator(tripId) {
-  const hours = DRIVER_HOURS[tripId] || 0;
-  if (hours === 0) {
+  const a = DRIVER_ACTIVITY[tripId] || { hours: 0, restHrs: null };
+  if (a.hours === 0) {
     return `<div class="rt-fatigue-indicator green">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-      <span>No prior trips logged today — fresh driver</span>
+      <span>No prior trips today — fresh driver</span>
     </div>`;
-  } else if (hours < 4) {
+  }
+  const restText = a.restHrs !== null
+    ? `Last trip ended ${a.restHrs >= 1 ? a.restHrs + ' hrs' : Math.round(a.restHrs * 60) + ' min'} ago`
+    : '';
+  if (a.hours < 4 && (a.restHrs === null || a.restHrs >= 1)) {
     return `<div class="rt-fatigue-indicator green">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      <span>Driver has logged ~${hours} hrs today — within normal range</span>
+      <span>${a.hours} hrs logged today · ${restText} — within normal range</span>
     </div>`;
-  } else if (hours < 6) {
+  } else if (a.hours < 6 && (a.restHrs === null || a.restHrs >= 1)) {
     return `<div class="rt-fatigue-indicator yellow">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <span><strong>This is a return trip.</strong> Driver has already logged ~${hours} hrs today. Use your judgment.</span>
+      <span><strong>Return trip.</strong> ${a.hours} hrs logged today · ${restText} — use your judgment</span>
     </div>`;
   } else {
     return `<div class="rt-fatigue-indicator red">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <span><strong>High fatigue risk.</strong> Driver has logged ~${hours} hrs today. Consider requesting a different driver.</span>
+      <span><strong>High fatigue risk.</strong> ${a.hours} hrs logged today · ${restText} — consider a different driver</span>
     </div>`;
   }
 }
@@ -752,11 +757,9 @@ function openResponse(id, price, urgent, mode) {
   if (isSame) { panel.style.display = 'none'; activeBid = null; return; }
   panel.dataset.mode = mode; activeBid = id;
   const urgentWarn = urgent ? `<div class="rt-urgent-warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Rider's max wait. Only respond if you can meet this.</div>` : '';
-  const fatigueTag = getFatigueIndicator(id);
   if (mode === 'accept') {
     panel.classList.add('accept-mode');
     inner.innerHTML = `<div style="font-size:13px;font-weight:600;color:#085041;margin-bottom:10px;display:flex;align-items:center;gap:6px;"><svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Accepting this trip</div>
-      ${fatigueTag}
       <div class="rt-locked-price">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         <div><div class="rt-locked-price-label">Price locked at rider's offer</div></div>
@@ -770,7 +773,6 @@ function openResponse(id, price, urgent, mode) {
   } else {
     panel.classList.remove('accept-mode');
     inner.innerHTML = `<div style="font-size:13px;font-weight:600;color:#1A1A18;margin-bottom:10px;">Submit a counter bid</div>
-      ${fatigueTag}
       <div class="rt-bid-fields">
         <div><div class="rt-bid-field-label">Your price</div><div class="rt-bid-input-wrap"><span>$</span><input type="number" id="bid-input-${id}" placeholder="${price}" min="1" /></div></div>
         <div><div class="rt-bid-field-label">Your ETA <span style="color:#D85A30;">*required</span></div><div class="rt-bid-input-wrap"><input type="text" id="eta-input-${id}" placeholder="e.g. 20 min" /></div></div>
