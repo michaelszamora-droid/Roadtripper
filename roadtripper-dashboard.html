@@ -264,7 +264,7 @@
               <span>3 drivers responded</span>
               <span class="rt-bid-badge">2 new</span>
             </div>
-            <button class="rt-btn-sm green" onclick="showToast('Opening bid review')">Review bids</button>
+            <button class="rt-btn-sm green" onclick="if(window.parent&&window.parent.navigate){window.parent.navigate('bid-review');}else{window.location='roadtripper-bid-review.html';}">Review bids</button>
           </div>
         </div>
       </div>

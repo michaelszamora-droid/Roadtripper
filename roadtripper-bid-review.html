@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roadtripper — Review Bids</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #F7F6F3; color: #1A1A18; padding: 24px 16px; }
+  .rt-app { max-width: 600px; margin: 0 auto; background: #FFFFFF; border-radius: 16px; border: 1px solid #E5E2DC; overflow: hidden; }
+
+  .rt-nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #E5E2DC; }
+  .rt-logo { font-size: 18px; font-weight: 600; color: #1A1A18; letter-spacing: -0.3px; }
+  .rt-logo span { color: #1D9E75; }
+
+  /* Trip summary banner */
+  .rt-trip-banner { background: #F5FBF8; border-bottom: 1px solid #D4EDE4; padding: 14px 20px; }
+  .rt-trip-banner-route { font-size: 15px; font-weight: 700; color: #1A1A18; display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .rt-trip-banner-route svg { width: 14px; height: 14px; color: #1D9E75; }
+  .rt-trip-banner-meta { font-size: 12px; color: #5F5E5A; display: flex; gap: 12px; flex-wrap: wrap; }
+  .rt-bid-count { font-size: 12px; font-weight: 600; color: #085041; background: #E1F5EE; border: 1px solid #5DCAA5; border-radius: 999px; padding: 2px 10px; display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; }
+  .rt-bid-count svg { width: 12px; height: 12px; }
+
+  /* Sort bar */
+  .rt-sort-bar { display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-bottom: 1px solid #E5E2DC; overflow-x: auto; }
+  .rt-sort-label { font-size: 11px; color: #8C8A84; font-weight: 600; white-space: nowrap; }
+  .rt-sort-chip { padding: 5px 12px; border-radius: 999px; font-size: 12px; border: 1px solid #E5E2DC; color: #5F5E5A; cursor: pointer; background: transparent; transition: all 0.15s; font-family: inherit; white-space: nowrap; }
+  .rt-sort-chip.active { background: #E1F5EE; border-color: #5DCAA5; color: #085041; font-weight: 600; }
+
+  /* Bid cards */
+  .rt-bids-list { padding: 16px 20px; max-height: 68vh; overflow-y: auto; }
+  .rt-bid-card { border: 1.5px solid #E5E2DC; border-radius: 14px; padding: 16px; margin-bottom: 14px; transition: border-color 0.15s; }
+  .rt-bid-card:hover { border-color: #D8D5CD; }
+  .rt-bid-card.new-bid { border-color: #5DCAA5; background: #F5FBF8; }
+
+  .rt-bid-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; gap: 10px; }
+  .rt-driver-info { display: flex; align-items: center; gap: 10px; }
+  .rt-driver-avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: white; flex-shrink: 0; background: linear-gradient(135deg, #1D9E75, #5DCAA5); }
+  .rt-driver-name { font-size: 14px; font-weight: 700; color: #1A1A18; margin-bottom: 2px; }
+  .rt-driver-rating { font-size: 12px; color: #E8A33D; display: flex; align-items: center; gap: 4px; }
+  .rt-driver-rating span { color: #5F5E5A; }
+  .rt-new-badge { font-size: 10px; font-weight: 700; background: #D85A30; color: white; padding: 2px 7px; border-radius: 999px; flex-shrink: 0; }
+
+  .rt-bid-price-block { text-align: right; flex-shrink: 0; }
+  .rt-bid-price { font-size: 22px; font-weight: 700; color: #1A1A18; }
+  .rt-bid-price.match { color: #0F6E56; }
+  .rt-bid-price.counter { color: #5B8FD9; }
+  .rt-bid-price-label { font-size: 10px; color: #8C8A84; margin-top: 1px; }
+  .rt-bid-eta { font-size: 11px; color: #5F5E5A; margin-top: 3px; display: flex; align-items: center; gap: 3px; justify-content: flex-end; }
+  .rt-bid-eta svg { width: 11px; height: 11px; }
+
+  .rt-driver-details { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .rt-detail-item { background: #FAFAF8; border: 1px solid #E5E2DC; border-radius: 8px; padding: 8px 10px; }
+  .rt-detail-label { font-size: 10px; color: #8C8A84; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; }
+  .rt-detail-val { font-size: 12px; color: #1A1A18; font-weight: 500; }
+
+  /* Fatigue indicator */
+  .rt-fatigue { display: flex; align-items: flex-start; gap: 7px; font-size: 11px; line-height: 1.5; padding: 8px 10px; border-radius: 8px; margin-bottom: 12px; }
+  .rt-fatigue svg { width: 13px; height: 13px; flex-shrink: 0; margin-top: 1px; }
+  .rt-fatigue.green { background: #E1F5EE; color: #085041; }
+  .rt-fatigue.yellow { background: #FAF7EF; color: #7A6420; }
+  .rt-fatigue.red { background: #FAECE7; color: #993C1D; }
+
+  /* Badges */
+  .rt-badge-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .rt-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 3px 9px; border-radius: 999px; font-weight: 600; }
+  .rt-badge.verified { background: #E1F5EE; color: #085041; border: 1px solid #5DCAA5; }
+  .rt-badge.uber { background: #1A1A18; color: white; }
+  .rt-badge.lyft { background: #EA0B8C; color: white; }
+  .rt-badge svg { width: 11px; height: 11px; }
+
+  /* Actions */
+  .rt-bid-actions { display: flex; gap: 10px; }
+  .rt-btn-accept-bid { flex: 1; padding: 11px; background: #1D9E75; color: #04342C; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; transition: opacity 0.15s; }
+  .rt-btn-accept-bid:hover { opacity: 0.88; }
+  .rt-btn-decline-bid { padding: 11px 16px; background: transparent; color: #B5483B; border: 1px solid #F0C4C0; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+  .rt-btn-decline-bid:hover { background: #FAECE7; }
+  .rt-btn-view-profile { padding: 11px 16px; background: transparent; color: #5F5E5A; border: 1px solid #E5E2DC; border-radius: 10px; font-size: 13px; cursor: pointer; font-family: inherit; }
+
+  /* Accepted state */
+  .rt-accepted-banner { display: none; background: #E1F5EE; border: 1px solid #5DCAA5; border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
+  .rt-accepted-banner.show { display: flex; align-items: center; gap: 10px; }
+  .rt-accepted-banner svg { width: 18px; height: 18px; color: #0F6E56; flex-shrink: 0; }
+  .rt-accepted-title { font-size: 13px; font-weight: 700; color: #085041; }
+  .rt-accepted-sub { font-size: 11px; color: #0F6E56; margin-top: 1px; }
+
+  .rt-toast { display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #085041; color: #9FE1CB; padding: 11px 20px; border-radius: 10px; font-size: 13px; z-index: 100; white-space: nowrap; }
+  .rt-toast.show { display: block; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: #D8D5CD; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="rt-app">
+  <nav class="rt-nav">
+    <div class="rt-logo">road<span>tripper</span></div>
+  </nav>
+
+  <!-- Trip summary -->
+  <div class="rt-trip-banner">
+    <div class="rt-trip-banner-route">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      Doral, FL
+      <svg style="width:12px;height:12px;color:#8C8A84;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      Jacksonville, FL
+    </div>
+    <div class="rt-trip-banner-meta">
+      <span>Jun 20 · 6:00 AM</span>
+      <span>3 passengers · 3+ bags</span>
+      <span>Your offer: $420</span>
+    </div>
+    <div class="rt-bid-count">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      3 drivers responded · 2 new
+    </div>
+  </div>
+
+  <!-- Sort bar -->
+  <div class="rt-sort-bar">
+    <span class="rt-sort-label">Sort:</span>
+    <button class="rt-sort-chip active" onclick="sortBids('newest')">Newest first</button>
+    <button class="rt-sort-chip" onclick="sortBids('price-low')">Lowest price</button>
+    <button class="rt-sort-chip" onclick="sortBids('rating')">Highest rated</button>
+    <button class="rt-sort-chip" onclick="sortBids('eta')">Fastest ETA</button>
+  </div>
+
+  <div class="rt-bids-list">
+
+    <div id="accepted-banner" class="rt-accepted-banner">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+      <div>
+        <div class="rt-accepted-title">Driver accepted — trip confirmed!</div>
+        <div class="rt-accepted-sub">You'll receive a confirmation with full trip details.</div>
+      </div>
+    </div>
+
+    <!-- Bid 1 — New, counter bid -->
+    <div class="rt-bid-card new-bid" id="bid-1">
+      <div class="rt-bid-header">
+        <div class="rt-driver-info">
+          <div class="rt-driver-avatar">RM</div>
+          <div>
+            <div class="rt-driver-name">Rafael M.</div>
+            <div class="rt-driver-rating">★★★★★ <span>4.9 · 142 trips</span></div>
+          </div>
+        </div>
+        <div>
+          <span class="rt-new-badge">NEW</span>
+          <div class="rt-bid-price-block" style="margin-top:6px;">
+            <div class="rt-bid-price counter">$395</div>
+            <div class="rt-bid-price-label">counter bid</div>
+            <div class="rt-bid-eta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>ETA 15 min</div>
+          </div>
+        </div>
+      </div>
+      <div class="rt-badge-row">
+        <span class="rt-badge uber"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>Uber verified · 4.9★</span>
+        <span class="rt-badge verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>ID verified</span>
+      </div>
+      <div class="rt-driver-details">
+        <div class="rt-detail-item">
+          <div class="rt-detail-label">Vehicle</div>
+          <div class="rt-detail-val">2023 Hyundai Sonata</div>
+        </div>
+        <div class="rt-detail-item">
+          <div class="rt-detail-label">Type</div>
+          <div class="rt-detail-val">Standard sedan</div>
+        </div>
+        <div class="rt-detail-item">
+          <div class="rt-detail-label">On-time rate</div>
+          <div class="rt-detail-val">96%</div>
+        </div>
+        <div class="rt-detail-item">
+          <div class="rt-detail-label">Member since</div>
+          <div class="rt-detail-val">Mar 2026</div>
+        </div>
+      </div>
+      <div class="rt-fatigue green">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        No prior trips today — fresh driver
+      </div>
+      <div class="rt-bid-actions">
+        <button class="rt-btn-view-profile" onclick="showToast('Opening Rafael\'s full profile')">Profile</button>
+        <button class="rt-btn-decline-bid" onclick="declineBid('bid-1','Rafael M.')">Decline</button>
+        <button class="rt-btn-accept-bid" onclick="acceptBid('bid-1','Rafael M.','$395')">Accept $395</button>
+      </div>
+    </div>
+
+    <!-- Bid 2 — New, matched price -->
+    <div class="rt-bid-card new-bid" id="bid-2">
+      <div class="rt-bid-header">
+        <div class="rt-driver-info">
+          <div class="rt-driver-avatar" style="background:linear-gradient(135deg,#5B8FD9,#8AB4E8);">PS</div>
+          <div>
+            <div class="rt-driver-name">Patricia S.</div>
+            <div class="rt-driver-rating">★★★★★ <span>4.8 · 87 trips</span></div>
+          </div>
+        </div>
+        <div>
+          <span class="rt-new-badge">NEW</span>
+          <div class="rt-bid-price-block" style="margin-top:6px;">
+            <div class="rt-bid-price match">$420</div>
+            <div class="rt-bid-price-label">your price ✓</div>
+            <div class="rt-bid-eta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>ETA 22 min</div>
+          </div>
+        </div>
+      </div>
+      <div class="rt-badge-row">
+        <span class="rt-badge lyft">Lyft verified · 4.8★</span>
+        <span class="rt-badge verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>ID verified</span>
+      </div>
+      <div class="rt-driver-details">
+        <div class="rt-detail-item">
+          <div class="rt-detail-label">Vehicle</div>
+          <div class="rt-detail-val">2022 Toyota Sienna</div>
+        </div>
+        <div class="rt-detail-item">
+          <div class="rt-detail-label">Type</div>
+          <div class="rt-detail-val">Full-size minivan</div>
+        </div>
+        <div class="rt-detail-item">
+          <div class="rt-detail-label">On-time rate</div>
+          <div class="rt-detail-val">94%</div>
+        </div>
+        <div class="rt-detail-item">
+          <div class="rt-detail-label">Member since</div>
+          <div class="rt-detail-val">Jan 2026</div>
+        </div>
+      </div>
+      <div class="rt-fatigue yellow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span><strong>Return trip.</strong> 3.5 hrs logged today · Last trip ended 4 hrs ago — use your judgment</span>
+      </div>
+      <div class="rt-bid-actions">
+        <button class="rt-btn-view-profile" onclick="showToast('Opening Patricia\'s full profile')">Profile</button>
+        <button class="rt-btn-decline-bid" onclick="declineBid('bid-2','Patricia S.')">Decline</button>
+        <button class="rt-btn-accept-bid" onclick="acceptBid('bid-2','Patricia S.','$420')">Accept $420</button>
+      </div>
+    </div>
+
+    <!-- Bid 3 — Older, high fatigue -->
+    <div class="rt-bid-card" id="bid-3">
+      <div class="rt-bid-header">
+        <div class="rt-driver-info">
+          <div class="rt-driver-avatar" style="background:linear-gradient(135deg,#8C8A84,#B5B2AA);">DK</div>
+          <div>
+            <div class="rt-driver-name">David K.</div>
+            <div class="rt-driver-rating">★★★★☆ <span>4.4 · 53 trips</span></div>
+          </div>
+        </div>
+        <div class="rt-bid-price-block">
+          <div class="rt-bid-price counter">$380</div>
+          <div class="rt-bid-price-label">counter bid</div>
+          <div class="rt-bid-eta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>ETA 35 min</div>
+        </div>
+      </div>
+      <div class="rt-badge-row">
+        <span class="rt-badge uber"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>Uber verified · 4.4★</span>
+        <span class="rt-badge verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>ID verified</span>
+      </div>
+      <div class="rt-driver-details">
+        <div class="rt-detail-item">
+          <div class="rt-detail-label">Vehicle</div>
+          <div class="rt-detail-val">2020 Chevrolet Tahoe</div>
+        </div>
+        <div class="rt-detail-item">
+          <div class="rt-detail-label">Type</div>
+          <div class="rt-detail-val">Full-size SUV</div>
+        </div>
+        <div class="rt-detail-item">
+          <div class="rt-detail-label">On-time rate</div>
+          <div class="rt-detail-val">88%</div>
+        </div>
+        <div class="rt-detail-item">
+          <div class="rt-detail-label">Member since</div>
+          <div class="rt-detail-val">Feb 2026</div>
+        </div>
+      </div>
+      <div class="rt-fatigue red">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span><strong>High fatigue risk.</strong> 6.2 hrs logged today · Last trip ended 45 min ago — consider a different driver</span>
+      </div>
+      <div class="rt-bid-actions">
+        <button class="rt-btn-view-profile" onclick="showToast('Opening David\'s full profile')">Profile</button>
+        <button class="rt-btn-decline-bid" onclick="declineBid('bid-3','David K.')">Decline</button>
+        <button class="rt-btn-accept-bid" onclick="acceptBid('bid-3','David K.','$380')">Accept $380</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast" class="rt-toast"></div>
+
+<script>
+function acceptBid(cardId, name, price) {
+  // Hide all other bid cards
+  document.querySelectorAll('.rt-bid-card').forEach(c => {
+    if (c.id !== cardId) c.style.display = 'none';
+  });
+  // Update accepted card to confirmed state
+  const card = document.getElementById(cardId);
+  card.style.borderColor = '#1D9E75';
+  card.style.background = '#F5FBF8';
+  const actions = card.querySelector('.rt-bid-actions');
+  if (actions) actions.innerHTML = `<div style="font-size:13px;font-weight:600;color:#085041;display:flex;align-items:center;gap:6px;width:100%;justify-content:center;padding:10px 0;">
+    <svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+    Accepted — trip confirmed with ${name} at ${price}
+  </div>`;
+  // Show accepted banner
+  const banner = document.getElementById('accepted-banner');
+  banner.classList.add('show');
+  banner.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  showToast(`Trip confirmed with ${name} at ${price}`);
+}
+
+function declineBid(cardId, name) {
+  const card = document.getElementById(cardId);
+  card.style.opacity = '0.4';
+  card.style.pointerEvents = 'none';
+  const actions = card.querySelector('.rt-bid-actions');
+  if (actions) actions.innerHTML = `<div style="font-size:12px;color:#B5B2AA;padding:6px 0;">Bid declined</div>`;
+  showToast(`${name}'s bid declined`);
+}
+
+function sortBids(method) {
+  document.querySelectorAll('.rt-sort-chip').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+  showToast('Sorted by ' + method.replace('-', ' '));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
