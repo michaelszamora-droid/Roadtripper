@@ -252,7 +252,7 @@ function renderBids() {
             <div style="font-size:11px;color:#8C8A84;margin-top:5px;">Driver will be notified and can accept or counter again.</div>
           </div>
           <div class="rt-bid-actions">
-            <button class="rt-btn-view-profile" onclick="showToast('Opening ${b.name}\'s full profile')">Profile</button>
+            <button class="rt-btn-view-profile" onclick="rt_navigate('profile')">Profile</button>
             <button class="rt-btn-decline-bid" onclick="declineBid('${b.id}','${b.name}')">Decline</button>
             <button class="rt-btn-counter-bid" onclick="toggleCounter('${b.id}')">Counter</button>
             <button class="rt-btn-accept-bid" onclick="acceptBid('${b.id}','${b.name}','$${b.currentOffer}')">Accept $${b.currentOffer}</button>
@@ -332,3 +332,13 @@ document.addEventListener('DOMContentLoaded', renderBids);
 </script>
 </body>
 </html>
+<script>
+function rt_navigate(screen) {
+  if (window.parent && window.parent.navigate) {
+    window.parent.navigate(screen);
+  } else {
+    const map = { 'profile': 'roadtripper-profiles.html', 'messages': 'roadtripper-messages.html', 'confirmation': 'roadtripper-trip-confirmation.html' };
+    if (map[screen]) window.location = map[screen];
+  }
+}
+</script>

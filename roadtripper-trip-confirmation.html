@@ -295,7 +295,7 @@
       </div>
 
       <div class="rt-action-row">
-        <button class="rt-btn-message" onclick="showToast('Opening message thread with Rafael')">
+        <button class="rt-btn-message" onclick="rt_navigate('messages')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           Message Rafael
         </button>
@@ -420,13 +420,24 @@
               <div class="rt-detail-label" style="margin-bottom:2px;">After estimated costs</div>
               <div class="rt-detail-val" style="color:#0F6E56; font-size:17px;">+$60.45 profit</div>
             </div>
-            <div class="rt-view-profile-link" onclick="showToast('Opening full cost breakdown')">See breakdown</div>
+            <div class="rt-view-profile-link" onclick="toggleDriverBreakdown()">See breakdown</div>
+          </div>
+          <div id="driver-cost-breakdown" style="display:none;margin-top:12px;border-top:1px dashed #E5E2DC;padding-top:12px;">
+            <div style="font-size:11px;font-weight:600;color:#8C8A84;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Estimated trip costs — Doral → Orlando (235 mi)</div>
+            <div style="font-size:12px;color:#5F5E5A;display:flex;justify-content:space-between;margin-bottom:6px;"><span>Gas (~$0.18/mi)</span><span>$42.30</span></div>
+            <div style="font-size:12px;color:#5F5E5A;display:flex;justify-content:space-between;margin-bottom:6px;"><span>Depreciation (~$0.08/mi)</span><span>$18.80</span></div>
+            <div style="font-size:12px;color:#5F5E5A;display:flex;justify-content:space-between;margin-bottom:6px;"><span>Maintenance & wear (~$0.06/mi)</span><span>$14.10</span></div>
+            <div style="font-size:12px;color:#5F5E5A;display:flex;justify-content:space-between;margin-bottom:6px;"><span>Insurance (~$0.05/mi)</span><span>$11.75</span></div>
+            <div style="font-size:12px;color:#5F5E5A;display:flex;justify-content:space-between;margin-bottom:8px;"><span>Platform fee</span><span>$5.00</span></div>
+            <div style="font-size:12px;font-weight:600;color:#1A1A18;display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid #E5E2DC;margin-bottom:6px;"><span>Total estimated costs</span><span>$91.95</span></div>
+            <div style="font-size:12px;font-weight:600;color:#0F6E56;display:flex;justify-content:space-between;"><span>Estimated take-home</span><span>+$183.05</span></div>
+            <div style="font-size:10px;color:#B5B2AA;margin-top:8px;">* National averages. One-way costs only.</div>
           </div>
         </div>
       </div>
 
       <div class="rt-action-row">
-        <button class="rt-btn-message" onclick="showToast('Opening message thread with Carlos')">
+        <button class="rt-btn-message" onclick="rt_navigate('messages')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           Message Carlos
         </button>
@@ -545,3 +556,22 @@ function showToast(msg) {
 
 </body>
 </html>
+<script>
+function rt_navigate(screen) {
+  if (window.parent && window.parent.navigate) {
+    window.parent.navigate(screen);
+  } else {
+    const map = { 'messages': 'roadtripper-messages.html', 'profile': 'roadtripper-profiles.html' };
+    if (map[screen]) window.location = map[screen];
+  }
+}
+
+function toggleDriverBreakdown() {
+  const panel = document.getElementById('driver-cost-breakdown');
+  if (!panel) return;
+  const isOpen = panel.style.display === 'block';
+  panel.style.display = isOpen ? 'none' : 'block';
+  const link = document.querySelector('[onclick="toggleDriverBreakdown()"]');
+  if (link) link.textContent = isOpen ? 'See breakdown' : 'Hide breakdown';
+}
+</script>

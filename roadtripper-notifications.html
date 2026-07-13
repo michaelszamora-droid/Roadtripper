@@ -158,7 +158,28 @@ function markRead(id, containerId) {
   const dot = el.querySelector('.rt-unread-dot');
   if (dot) dot.className = 'rt-read-dot';
   updateUnreadCount();
-  showToast('Opening notification');
+
+  // Route to relevant screen based on notification type
+  const riderRoutes = { 1:'bid-review', 2:'home', 3:'confirmation', 4:'messages', 5:'bid-review', 6:'home', 7:'home', 8:'messages', 9:'confirmation' };
+  const driverRoutes = { 1:'home', 2:'confirmation', 3:'confirmation', 4:'messages', 5:'profile', 6:'home', 7:'home', 8:'messages', 9:'profile' };
+  const routes = containerId === 'rider-list' ? riderRoutes : driverRoutes;
+  const target = routes[id];
+  if (target) {
+    setTimeout(() => rt_navigate(target), 300);
+  }
+}
+
+function rt_navigate(screen) {
+  if (window.parent && window.parent.navigate) {
+    window.parent.navigate(screen);
+  } else {
+    const map = {
+      'home': 'roadtripper-dashboard.html', 'messages': 'roadtripper-messages.html',
+      'confirmation': 'roadtripper-trip-confirmation.html', 'profile': 'roadtripper-profiles.html',
+      'bid-review': 'roadtripper-bid-review.html'
+    };
+    if (map[screen]) window.location = map[screen];
+  }
 }
 
 function markAllRead() {

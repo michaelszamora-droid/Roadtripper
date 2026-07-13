@@ -173,7 +173,7 @@
     </div>
 
     <div class="rt-main">
-      <button class="rt-post-trip-btn" onclick="showToast('Opening trip posting form')">
+      <button class="rt-post-trip-btn" onclick="rt_navigate('trips')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Post a new trip
       </button>
@@ -204,8 +204,8 @@
             <div class="rt-price-tag">$140</div>
           </div>
           <div class="rt-card-actions">
-            <button class="rt-btn-sm outline" onclick="showToast('Opening chat with Rafael')">Message driver</button>
-            <button class="rt-btn-sm outline" onclick="showToast('Opening trip details')">View details</button>
+            <button class="rt-btn-sm outline" onclick="rt_navigate('messages')">Message driver</button>
+            <button class="rt-btn-sm outline" onclick="rt_navigate('confirmation')">View details</button>
           </div>
         </div>
       </div>
@@ -236,8 +236,8 @@
             <div class="rt-price-tag">$115</div>
           </div>
           <div class="rt-card-actions">
-            <button class="rt-btn-sm outline" onclick="showToast('Opening chat with Priya')">Message driver</button>
-            <button class="rt-btn-sm outline" onclick="showToast('Opening trip details')">View details</button>
+            <button class="rt-btn-sm outline" onclick="rt_navigate('messages')">Message driver</button>
+            <button class="rt-btn-sm outline" onclick="rt_navigate('confirmation')">View details</button>
             <button class="rt-btn-sm red" onclick="showToast('Cancel flow opened')">Cancel</button>
           </div>
         </div>
@@ -307,7 +307,7 @@
             </div>
           </div>
           <div class="rt-card-actions">
-            <button class="rt-btn-sm outline" onclick="showToast('Opening trip details')">View details</button>
+            <button class="rt-btn-sm outline" onclick="rt_navigate('confirmation')">View details</button>
           </div>
         </div>
 
@@ -445,8 +445,8 @@
             <div class="rt-price-tag earned">+$275</div>
           </div>
           <div class="rt-card-actions">
-            <button class="rt-btn-sm outline" onclick="showToast('Opening chat with Carlos')">Message rider</button>
-            <button class="rt-btn-sm outline" onclick="showToast('Opening trip details')">View details</button>
+            <button class="rt-btn-sm outline" onclick="rt_navigate('messages')">Message rider</button>
+            <button class="rt-btn-sm outline" onclick="rt_navigate('confirmation')">View details</button>
             <button class="rt-btn-sm green" onclick="openReturnFare()">
               <svg style="width:12px;height:12px;vertical-align:-1px;margin-right:4px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
               Find return fare
@@ -480,8 +480,8 @@
             <div class="rt-price-tag earned">+$110</div>
           </div>
           <div class="rt-card-actions">
-            <button class="rt-btn-sm outline" onclick="showToast('Opening chat with Priya')">Message rider</button>
-            <button class="rt-btn-sm outline" onclick="showToast('Opening trip details')">View details</button>
+            <button class="rt-btn-sm outline" onclick="rt_navigate('messages')">Message rider</button>
+            <button class="rt-btn-sm outline" onclick="rt_navigate('confirmation')">View details</button>
             <button class="rt-btn-sm red" onclick="showToast('Cancel flow opened')">Cancel</button>
           </div>
         </div>
@@ -506,8 +506,8 @@
             <div class="rt-price-tag earned">+$175</div>
           </div>
           <div class="rt-card-actions">
-            <button class="rt-btn-sm outline" onclick="showToast('Opening chat with Monica')">Message rider</button>
-            <button class="rt-btn-sm outline" onclick="showToast('Opening trip details')">View details</button>
+            <button class="rt-btn-sm outline" onclick="rt_navigate('messages')">Message rider</button>
+            <button class="rt-btn-sm outline" onclick="rt_navigate('confirmation')">View details</button>
             <button class="rt-btn-sm red" onclick="showToast('Cancel flow opened')">Cancel</button>
           </div>
         </div>
@@ -550,7 +550,7 @@
             </div>
           </div>
           <div class="rt-card-actions">
-            <button class="rt-btn-sm outline" onclick="showToast('Opening trip details')">View details</button>
+            <button class="rt-btn-sm outline" onclick="rt_navigate('confirmation')">View details</button>
           </div>
         </div>
       </div>
@@ -793,3 +793,21 @@ function closeReturnFare() {
 </script>
 </body>
 </html>
+
+<script>
+// Navigation helper — works both standalone and inside index.html iframe
+function rt_navigate(screen) {
+  if (window.parent && window.parent.navigate) {
+    window.parent.navigate(screen);
+  } else {
+    const map = {
+      'messages': 'roadtripper-messages.html',
+      'confirmation': 'roadtripper-trip-confirmation.html',
+      'trips': 'roadtripper-marketplace.html',
+      'profile': 'roadtripper-profiles.html',
+      'bid-review': 'roadtripper-bid-review.html'
+    };
+    if (map[screen]) window.location = map[screen];
+  }
+}
+</script>
