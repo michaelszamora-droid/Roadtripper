@@ -381,8 +381,12 @@
             <div class="rt-earnings-stat-label">Avg. per trip</div>
           </div>
           <div class="rt-earnings-stat">
-            <div class="rt-earnings-stat-val">$0.41</div>
-            <div class="rt-earnings-stat-label">Avg. cost/mi</div>
+            <div class="rt-earnings-stat-val" id="earnings-miles">3,480</div>
+            <div class="rt-earnings-stat-label">Total miles</div>
+          </div>
+          <div class="rt-earnings-stat">
+            <div class="rt-earnings-stat-val" id="earnings-hours">53.5</div>
+            <div class="rt-earnings-stat-label">Total hours</div>
           </div>
         </div>
         <button class="rt-breakdown-link-card" onclick="toggleBreakdown()">
@@ -598,7 +602,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 const PERIOD_DATA = {
   week: {
-    label: 'This week', val: '$480', trips: '3', avg: '$160',
+    label: 'This week', val: '$480', trips: '3', avg: '$160', miles: '870', hours: '13.4',
     breakdown: [
       { label: 'Gas (~$0.18/mi · est. 870 mi)', val: '$157' },
       { label: 'Depreciation (~$0.08/mi)', val: '$70' },
@@ -609,7 +613,7 @@ const PERIOD_DATA = {
     total: '$338', profit: '+$142'
   },
   month: {
-    label: 'This month', val: '$1,840', trips: '12', avg: '$153',
+    label: 'This month', val: '$1,840', trips: '12', avg: '$153', miles: '3,480', hours: '53.5',
     breakdown: [
       { label: 'Gas (~$0.18/mi · est. 3,480 mi)', val: '$626' },
       { label: 'Depreciation (~$0.08/mi)', val: '$278' },
@@ -648,6 +652,8 @@ function setPeriod(period) {
   document.getElementById('earnings-val').textContent = d.val;
   document.getElementById('earnings-trips').textContent = d.trips;
   document.getElementById('earnings-avg').textContent = d.avg;
+  document.getElementById('earnings-miles').textContent = d.miles;
+  document.getElementById('earnings-hours').textContent = d.hours;
   const panel = document.getElementById('driver-breakdown-panel');
   panel.innerHTML = `
     <div class="rt-breakdown-panel-title">Estimated costs — ${d.label.toLowerCase()}</div>
