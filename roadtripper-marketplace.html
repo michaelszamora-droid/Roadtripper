@@ -327,13 +327,13 @@
         <hr class="rt-divider" />
         <div class="rt-section-label">Quick filters</div>
         <div class="rt-filter-row">
-          <button class="rt-filter-chip" onclick="toggleChip(this)">Urgent only</button>
-          <button class="rt-filter-chip" onclick="toggleChip(this)">Planned only</button>
-          <button class="rt-filter-chip active" onclick="toggleChip(this)">All open</button>
-          <button class="rt-filter-chip" onclick="toggleChip(this)">$100+</button>
-          <button class="rt-filter-chip" onclick="toggleChip(this)">$200+</button>
+          <button class="rt-filter-chip" onclick="toggleChip(this);applyDriverFilters()">Urgent only</button>
+          <button class="rt-filter-chip" onclick="toggleChip(this);applyDriverFilters()">Planned only</button>
+          <button class="rt-filter-chip active" onclick="toggleChip(this);applyDriverFilters()">All open</button>
+          <button class="rt-filter-chip" onclick="toggleChip(this);applyDriverFilters()">$100+</button>
+          <button class="rt-filter-chip" onclick="toggleChip(this);applyDriverFilters()">$200+</button>
         </div>
-        <button class="rt-btn-primary" onclick="showToast('Showing all open trips in Florida')">
+        <button class="rt-btn-primary" onclick="applyDriverFilters()">
           <svg style="width:14px;height:14px;vertical-align:-2px;margin-right:6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
           Search trips
         </button>
@@ -555,7 +555,8 @@ function renderTrips(containerId, showBid) {
       })
     : sampleTrips;
 
-  el.innerHTML = trips.map(t => {
+function buildTripCard(t, showBid) {
+    const driverClass = 'sedan';
     const dist = getDistance(t.pickup, t.destination);
     const vehicleClass = t.vehiclePref || 'any';
     const fares = dist ? calcFares(dist, vehicleClass) : null;
@@ -629,7 +630,20 @@ function renderTrips(containerId, showBid) {
         <div class="rt-card-breakdown" id="card-bd-${t.id}"><div class="rt-breakdown-title">Estimated driver costs for this trip</div><div id="card-bd-rows-${t.id}"></div><div class="rt-breakdown-note">* National averages. Return trip costs not included.</div></div>`:``}
       ${showBid?`<div id="resp-panel-${t.id}" style="display:none;" class="rt-response-panel"><div id="resp-panel-inner-${t.id}"></div></div>`:''}
     </div>`;
-  }).join('');
+}
+
+function renderTrips(containerId, showBid) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const driverClass = 'sedan';
+  const trips = showBid
+    ? [...sampleTrips].sort((a,b) => {
+        const aMatch = vehicleMatches(a.vehiclePref, driverClass) ? 0 : 1;
+        const bMatch = vehicleMatches(b.vehiclePref, driverClass) ? 0 : 1;
+        return aMatch - bMatch;
+      })
+    : sampleTrips;
+  el.innerHTML = trips.map(t => buildTripCard(t, showBid)).join('');
 }
 
 function buildPrefs() {
@@ -807,7 +821,77 @@ function switchTab(tab) {
   document.getElementById(tab+'-main').classList.add('active');
 }
 
-function toggleChip(el) { el.classList.toggle('active'); }
+function toggleChip(el) {
+  // Handle mutual exclusivity for All open / Urgent only / Planned only
+  const exclusive = ['All open', 'Urgent only', 'Planned only'];
+  if (exclusive.includes(el.textContent.trim())) {
+    document.querySelectorAll('.rt-filter-chip').forEach(c => {
+      if (exclusive.includes(c.textContent.trim())) c.classList.remove('active');
+    });
+  }
+  el.classList.toggle('active');
+}
+
+function applyDriverFilters() {
+  const origin = document.getElementById('driver-origin').value.trim().toLowerCase().replace(/,?\s*fl\.?$/i,'');
+  const dateVal = document.getElementById('driver-date').value;
+  const minFare = parseInt(document.getElementById('min-fare').value) || 0;
+
+  // Read active chips
+  const chips = [...document.querySelectorAll('.rt-filter-chip.active')].map(c => c.textContent.trim());
+  const urgentOnly = chips.includes('Urgent only');
+  const plannedOnly = chips.includes('Planned only');
+  const fare100 = chips.includes('$100+');
+  const fare200 = chips.includes('$200+');
+
+  const filtered = sampleTrips.filter(t => {
+    // Origin city filter
+    if (origin) {
+      const pickup = t.pickup.toLowerCase().replace(/,?\s*fl\.?$/i,'').trim();
+      if (!pickup.includes(origin) && !origin.includes(pickup)) return false;
+    }
+    // Date filter — match against trip date text (prototype: simple substring match)
+    if (dateVal) {
+      const d = new Date(dateVal);
+      const monthDay = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const tripDate = t.date;
+      if (tripDate !== 'Today' && !tripDate.includes(monthDay)) return false;
+    }
+    // Minimum fare
+    if (t.price < minFare) return false;
+    // Quick fare chips
+    if (fare200 && t.price < 200) return false;
+    else if (fare100 && t.price < 100) return false;
+    // Urgent / planned
+    if (urgentOnly && !t.urgent) return false;
+    if (plannedOnly && t.urgent) return false;
+
+    return true;
+  });
+
+  // Render filtered results
+  const el = document.getElementById('driver-trips-list');
+  if (!el) return;
+
+  if (filtered.length === 0) {
+    el.innerHTML = `<div style="text-align:center;padding:32px 20px;color:#B5B2AA;font-size:13px;background:#FAFAF8;border-radius:12px;border:1px dashed #E5E2DC;">
+      <svg style="width:28px;height:28px;color:#D8D5CD;margin:0 auto 10px;display:block;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      No trips match your filters.<br><span style="font-size:11px;">Try adjusting your search.</span>
+    </div>`;
+    return;
+  }
+
+  // Re-render with filtered set using existing renderTrips logic but with filtered array
+  const driverClass = 'sedan';
+  const sorted = [...filtered].sort((a,b) => {
+    const aMatch = vehicleMatches(a.vehiclePref, driverClass) ? 0 : 1;
+    const bMatch = vehicleMatches(b.vehiclePref, driverClass) ? 0 : 1;
+    return aMatch - bMatch;
+  });
+
+  el.innerHTML = sorted.map(t => buildTripCard(t, true)).join('');
+  showToast(`${filtered.length} trip${filtered.length !== 1 ? 's' : ''} found`);
+}
 function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3200); }
 
 buildPrefs();
