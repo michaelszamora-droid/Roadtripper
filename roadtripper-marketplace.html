@@ -539,22 +539,6 @@ function vehicleMatches(riderPref, driverClass) {
   return (VEHICLE_COMPAT[riderPref] || []).includes(driverClass);
 }
 
-function renderTrips(containerId, showBid) {
-  const el = document.getElementById(containerId);
-  if (!el) return;
-
-  // Prototype: driver's registered vehicle class (Sonata = sedan)
-  const driverClass = 'sedan';
-
-  // For driver feed: sort matched trips first, dim mismatched ones
-  const trips = showBid
-    ? [...sampleTrips].sort((a, b) => {
-        const aMatch = vehicleMatches(a.vehiclePref, driverClass) ? 0 : 1;
-        const bMatch = vehicleMatches(b.vehiclePref, driverClass) ? 0 : 1;
-        return aMatch - bMatch;
-      })
-    : sampleTrips;
-
 function buildTripCard(t, showBid) {
     const driverClass = 'sedan';
     const dist = getDistance(t.pickup, t.destination);
